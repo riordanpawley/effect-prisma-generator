@@ -1,4 +1,4 @@
-import { Command } from "@effect/platform";
+import { Command, FileSystem } from "@effect/platform";
 import { NodeContext, NodeRuntime } from "@effect/platform-node";
 import { Console, Effect } from "effect";
 
@@ -18,10 +18,20 @@ const run = (cmd: string, ...args: string[]) =>
   });
 
 const program = Effect.gen(function* () {
-  yield* run("npm", "run", "build");
-  yield* run("prisma", "generate", "--schema=tests/schema.prisma");
-  yield* run("prisma", "db", "push", "--schema=tests/schema.prisma");
-  yield* run("tsc", "--noEmit", "--project", "tsconfig.test.json");
+  const fs = yield* FileSystem.FileSystem;
+  const clean = process.argv.includes("--clean");
+
+  const distExists = yield* fs.exists("dist/");
+  if (clean || !distExists) {
+    yield* run("npm", "run", "build");
+  }
+  if (clean) {
+    yield* run("tsc", "--noEmit", "--project", "tsconfig.test.json");
+  }
+  const dbExists = yield* fs.exists("tests/dev.db");
+  if (clean || !dbExists) {
+    yield* run("prisma", "db", "push", "--schema=tests/schema.prisma");
+  }
   yield* run("vitest", "run");
 }).pipe(
   Effect.ensuring(
