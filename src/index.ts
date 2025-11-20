@@ -45,48 +45,56 @@ generatorHandler({
 function generateRawSqlOperations() {
   return `
     $executeRaw: (args: Prisma.Sql | [Prisma.Sql, ...any[]]) =>
-      Effect.tryPromise({
-        try: () => (Array.isArray(args) ? client.$executeRaw(args[0], ...args.slice(1)) : client.$executeRaw(args)),
-        catch: (error) =>
-          new PrismaError({
-            error,
-            operation: "$executeRaw",
-            model: "Prisma"
-          })
-      }),
+      Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.tryPromise({
+          try: () => (Array.isArray(args) ? client.$executeRaw(args[0], ...args.slice(1)) : client.$executeRaw(args)),
+          catch: (error) =>
+            new PrismaError({
+              error,
+              operation: "$executeRaw",
+              model: "Prisma"
+            })
+        })
+      ),
 
     $executeRawUnsafe: (query: string, ...values: any[]) =>
-      Effect.tryPromise({
-        try: () => client.$executeRawUnsafe(query, ...values),
-        catch: (error) =>
-          new PrismaError({
-            error,
-            operation: "$executeRawUnsafe",
-            model: "Prisma"
-          })
-      }),
+      Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.tryPromise({
+          try: () => client.$executeRawUnsafe(query, ...values),
+          catch: (error) =>
+            new PrismaError({
+              error,
+              operation: "$executeRawUnsafe",
+              model: "Prisma"
+            })
+        })
+      ),
 
     $queryRaw: (args: Prisma.Sql | [Prisma.Sql, ...any[]]) =>
-      Effect.tryPromise({
-        try: () => (Array.isArray(args) ? client.$queryRaw(args[0], ...args.slice(1)) : client.$queryRaw(args)),
-        catch: (error) =>
-          new PrismaError({
-            error,
-            operation: "$queryRaw",
-            model: "Prisma"
-          })
-      }),
+      Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.tryPromise({
+          try: () => (Array.isArray(args) ? client.$queryRaw(args[0], ...args.slice(1)) : client.$queryRaw(args)),
+          catch: (error) =>
+            new PrismaError({
+              error,
+              operation: "$queryRaw",
+              model: "Prisma"
+            })
+        })
+      ),
 
     $queryRawUnsafe: (query: string, ...values: any[]) =>
-      Effect.tryPromise({
-        try: () => client.$queryRawUnsafe(query, ...values),
-        catch: (error) =>
-          new PrismaError({
-            error,
-            operation: "$queryRawUnsafe",
-            model: "Prisma"
-          })
-      }),`;
+      Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.tryPromise({
+          try: () => client.$queryRawUnsafe(query, ...values),
+          catch: (error) =>
+            new PrismaError({
+              error,
+              operation: "$queryRawUnsafe",
+              model: "Prisma"
+            })
+        })
+      ),`;
 }
 
 function generateModelOperations(models: DMMF.Model[]) {
@@ -97,192 +105,226 @@ function generateModelOperations(models: DMMF.Model[]) {
 
       return `    ${modelNameCamel}: {
       findUnique: (args: Parameters<PrismaClient['${modelNameCamel}']['findUnique']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.findUnique(args),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "findUnique",
-              model: "${modelName}"
-            })
-        }),
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.findUnique(args),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "findUnique",
+                model: "${modelName}"
+              })
+          })
+        ),
 
       findUniqueOrThrow: (args: Parameters<PrismaClient['${modelNameCamel}']['findUniqueOrThrow']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.findUniqueOrThrow(args),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "findUniqueOrThrow",
-              model: "${modelName}"
-            })
-        }),
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.findUniqueOrThrow(args),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "findUniqueOrThrow",
+                model: "${modelName}"
+              })
+          })
+        ),
 
       findFirst: (args?: Parameters<PrismaClient['${modelNameCamel}']['findFirst']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.findFirst(args),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "findFirst",
-              model: "${modelName}"
-            })
-        }),
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.findFirst(args),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "findFirst",
+                model: "${modelName}"
+              })
+          })
+        ),
 
       findFirstOrThrow: (args?: Parameters<PrismaClient['${modelNameCamel}']['findFirstOrThrow']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.findFirstOrThrow(args),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "findFirstOrThrow",
-              model: "${modelName}"
-            })
-        }),
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.findFirstOrThrow(args),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "findFirstOrThrow",
+                model: "${modelName}"
+              })
+          })
+        ),
 
       findMany: (args?: Parameters<PrismaClient['${modelNameCamel}']['findMany']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.findMany(args),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "findMany",
-              model: "${modelName}"
-            })
-        }),
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.findMany(args),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "findMany",
+                model: "${modelName}"
+              })
+          })
+        ),
 
       create: (args: Parameters<PrismaClient['${modelNameCamel}']['create']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.create(args),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "create",
-              model: "${modelName}"
-            })
-        }),
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.create(args),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "create",
+                model: "${modelName}"
+              })
+          })
+        ),
 
       createMany: (args?: Parameters<PrismaClient['${modelNameCamel}']['createMany']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.createMany(args),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "createMany",
-              model: "${modelName}"
-            })
-        }),
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.createMany(args),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "createMany",
+                model: "${modelName}"
+              })
+          })
+        ),
 
       createManyAndReturn: (args?: Parameters<PrismaClient['${modelNameCamel}']['createManyAndReturn']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.createManyAndReturn(args),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "createManyAndReturn",
-              model: "${modelName}"
-            })
-        }),
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.createManyAndReturn(args),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "createManyAndReturn",
+                model: "${modelName}"
+              })
+          })
+        ),
 
       delete: (args: Parameters<PrismaClient['${modelNameCamel}']['delete']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.delete(args),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "delete",
-              model: "${modelName}"
-            })
-        }),
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.delete(args),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "delete",
+                model: "${modelName}"
+              })
+          })
+        ),
 
       update: (args: Parameters<PrismaClient['${modelNameCamel}']['update']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.update(args),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "update",
-              model: "${modelName}"
-            })
-        }),
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.update(args),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "update",
+                model: "${modelName}"
+              })
+          })
+        ),
 
       deleteMany: (args?: Parameters<PrismaClient['${modelNameCamel}']['deleteMany']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.deleteMany(args),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "deleteMany",
-              model: "${modelName}"
-            })
-        }),
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.deleteMany(args),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "deleteMany",
+                model: "${modelName}"
+              })
+          })
+        ),
 
       updateMany: (args: Parameters<PrismaClient['${modelNameCamel}']['updateMany']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.updateMany(args),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "updateMany",
-              model: "${modelName}"
-            })
-        }),
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.updateMany(args),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "updateMany",
+                model: "${modelName}"
+              })
+          })
+        ),
 
       updateManyAndReturn: (args: Parameters<PrismaClient['${modelNameCamel}']['updateManyAndReturn']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.updateManyAndReturn(args),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "updateManyAndReturn",
-              model: "${modelName}"
-            })
-        }),
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.updateManyAndReturn(args),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "updateManyAndReturn",
+                model: "${modelName}"
+              })
+          })
+        ),
 
       upsert: (args: Parameters<PrismaClient['${modelNameCamel}']['upsert']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.upsert(args),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "upsert",
-              model: "${modelName}"
-            })
-        }),
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.upsert(args),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "upsert",
+                model: "${modelName}"
+              })
+          })
+        ),
 
       // Aggregation operations
       count: (args?: Parameters<PrismaClient['${modelNameCamel}']['count']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.count(args),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "count",
-              model: "${modelName}"
-            })
-        }),
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.count(args),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "count",
+                model: "${modelName}"
+              })
+          })
+        ),
 
       aggregate: (args: Parameters<PrismaClient['${modelNameCamel}']['aggregate']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.aggregate(args),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "aggregate",
-              model: "${modelName}"
-            })
-        }),
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.aggregate(args),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "aggregate",
+                model: "${modelName}"
+              })
+          })
+        ),
 
       groupBy: (args: Parameters<PrismaClient['${modelNameCamel}']['groupBy']>[0]) =>
-        Effect.tryPromise({
-          try: () => client.${modelNameCamel}.groupBy(args as any),
-          catch: (error) =>
-            new PrismaError({
-              error,
-              operation: "groupBy",
-              model: "${modelName}"
-            })
-        })
+        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+          Effect.tryPromise({
+            try: () => client.${modelNameCamel}.groupBy(args as any),
+            catch: (error) =>
+              new PrismaError({
+                error,
+                operation: "groupBy",
+                model: "${modelName}"
+              })
+          })
+        )
     }`;
     })
     .join(",\n\n");
@@ -297,7 +339,7 @@ async function generateUnifiedService(
   const modelOperations = generateModelOperations(models);
 
   const serviceContent = `${header}
-import { Context, Data, Effect, Layer } from "effect"
+import { Context, Data, Effect, Layer, Runtime } from "effect"
 import { Service } from "effect/Effect"
 import { type Prisma, PrismaClient } from "${clientImportPath}"
 
@@ -330,8 +372,41 @@ export class PrismaError extends Data.TaggedError("PrismaError")<{
 
 export class PrismaService extends Service<PrismaService>()("PrismaService", {
   effect: Effect.gen(function* () {
-    const { tx: client } = yield* PrismaClientService
     return {
+      $transaction: <R, E, A>(
+        effect: Effect.Effect<A, E, R>,
+        options?: {
+          maxWait?: number
+          timeout?: number
+          isolationLevel?: Prisma.TransactionIsolationLevel
+        }
+      ) =>
+        Effect.flatMap(
+          Effect.all([PrismaClientService, Effect.runtime<R>()]),
+          ([{ client }, runtime]) =>
+            Effect.tryPromise({
+              try: () =>
+                client.$transaction(
+                  async (tx) => {
+                    return await Runtime.runPromise(runtime)(
+                      effect.pipe(
+                        Effect.provideService(PrismaClientService, {
+                          tx,
+                          client,
+                        })
+                      ) as Effect.Effect<A, E, R>
+                    )
+                  },
+                  options
+                ),
+              catch: (error) =>
+                new PrismaError({
+                  error,
+                  operation: "$transaction",
+                  model: "Prisma",
+                }),
+            })
+        ),
       ${rawSqlOperations}
 
       ${modelOperations}
