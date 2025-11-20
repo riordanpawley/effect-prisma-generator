@@ -3,7 +3,7 @@ import { Effect, Layer } from "effect";
 import { LivePrismaLayer, PrismaService } from "./generated/effect/index.js";
 
 describe("Prisma Effect Generator", () => {
-  const MainLayer = PrismaService.Default.pipe(Layer.provide(LivePrismaLayer));
+  const MainLayer = Layer.merge(LivePrismaLayer, PrismaService.Default);
 
   it.effect("should create and find a user", () =>
     Effect.gen(function* () {
@@ -33,6 +33,67 @@ describe("Prisma Effect Generator", () => {
       yield* prisma.user.delete({
         where: { id: user.id },
       });
+    }).pipe(Effect.provide(MainLayer)),
+  );
+
+  it.effect("should support transactions", () =>
+    Effect.gen(function* () {
+      const prisma = yield* PrismaService;
+      const email = `tx-test-${Date.now()}@example.com`;
+
+      // Transaction that should succeed
+      yield* prisma.$transaction(
+        Effect.gen(function* () {
+          yield* prisma.user.create({
+            data: {
+              email,
+              name: "Tx User",
+            },
+          });
+        }),
+      );
+
+      // Verify outside transaction
+      const found = yield* prisma.user.findUnique({
+        where: { email },
+      });
+      expect(found).not.toBeNull();
+      expect(found?.name).toBe("Tx User");
+
+      // Cleanup
+      yield* prisma.user.delete({
+        where: { email },
+      });
+    }).pipe(Effect.provide(MainLayer)),
+  );
+
+  it.effect("should rollback transaction on error", () =>
+    Effect.gen(function* () {
+      const prisma = yield* PrismaService;
+      const email = `rollback-test-${Date.now()}@example.com`;
+
+      const program = prisma.$transaction(
+        Effect.gen(function* () {
+          yield* prisma.user.create({
+            data: {
+              email,
+              name: "Rollback User",
+            },
+          });
+
+          // Force error
+          yield* Effect.fail("Boom");
+        }),
+      );
+
+      // We expect failure
+      yield* Effect.flip(program);
+
+      // Verify rollback
+      const found = yield* prisma.user.findUnique({
+        where: { email },
+      });
+      expect(found).toBeNull();
     }).pipe(Effect.provide(MainLayer)),
   );
 });
