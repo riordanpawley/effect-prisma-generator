@@ -24,6 +24,10 @@ generatorHandler({
   async onGenerate(options: GeneratorOptions) {
     const models = options.dmmf.datamodel.models;
     const outputDir = options.generator.output?.value;
+    const configPath = options.generator.config.clientImportPath;
+    const clientImportPath = Array.isArray(configPath)
+      ? configPath[0]
+      : (configPath ?? "@prisma/client");
 
     if (!outputDir) {
       throw new Error("No output directory specified");
@@ -34,10 +38,10 @@ generatorHandler({
     await fs.mkdir(outputDir, { recursive: true });
 
     // Generate unified index file with PrismaService
-    await generateUnifiedService([...models], outputDir);
+    await generateUnifiedService([...models], outputDir, clientImportPath);
 
     // Generate types file
-    await generateTypes([...models], outputDir);
+    await generateTypes([...models], outputDir, clientImportPath);
   },
 });
 
@@ -280,14 +284,18 @@ function generateModelOperations(models: DMMF.Model[]) {
     .join(",\n\n");
 }
 
-async function generateUnifiedService(models: DMMF.Model[], outputDir: string) {
+async function generateUnifiedService(
+  models: DMMF.Model[],
+  outputDir: string,
+  clientImportPath: string,
+) {
   const rawSqlOperations = generateRawSqlOperations();
   const modelOperations = generateModelOperations(models);
 
   const serviceContent = `${header}
 import { Context, Data, Effect, Layer } from "effect"
 import { Service } from "effect/Effect"
-import { type Prisma, PrismaClient } from "@prisma/client"
+import { type Prisma, PrismaClient } from "${clientImportPath}"
 import { type EffectPrismaService } from "./types.js"
 
 export class PrismaClientService extends Context.Tag("PrismaClientService")<
@@ -332,7 +340,11 @@ export class PrismaService extends Service<PrismaService>()("PrismaService", {
   await fs.writeFile(path.join(outputDir, "index.ts"), serviceContent);
 }
 
-async function generateTypes(models: DMMF.Model[], outputDir: string) {
+async function generateTypes(
+  models: DMMF.Model[],
+  outputDir: string,
+  clientImportPath: string,
+) {
   const modelTypeDefinitions = models
     .map((model) => {
       const modelName = model.name;
@@ -361,7 +373,7 @@ async function generateTypes(models: DMMF.Model[], outputDir: string) {
 
   const typeContent = `${header}
 import type { Effect } from "effect"
-import type { Prisma } from "@prisma/client"
+import type { Prisma } from "${clientImportPath}"
 import type { PrismaError } from "./index.js"
 
 export type EffectPrismaService = {

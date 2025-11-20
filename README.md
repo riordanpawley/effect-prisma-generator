@@ -29,11 +29,13 @@ Add the generator to your `schema.prisma` file:
 // prisma/schema.prisma
 generator client {
   provider        = "prisma-client-js"
+  output          = "./generated/client"
 }
 
 generator effect {
   provider = "effect-prisma-generator"
   output   = "./generated/effect" // relative to the schema.prisma file, e.g. prisma/generated/effect
+  clientImportPath = "../client" // relative to the output path ^here (defaults to "@prisma/client")
 }
 ```
 
