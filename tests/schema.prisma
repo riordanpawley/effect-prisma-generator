@@ -5,11 +5,13 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+  output   = "./generated/client"
 }
 
 generator effect {
-  provider = "node ./dist/index.js"
-  output   = "./generated/effect"
+  provider         = "node ./dist/index.js"
+  output           = "./generated/effect"
+  clientImportPath = "../client"
 }
 
 model User {
