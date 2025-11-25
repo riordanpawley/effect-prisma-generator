@@ -6,9 +6,10 @@ import {
   PrismaUniqueConstraintError,
 } from "./generated/effect/index.js";
 
-describe("Prisma Effect Generator", () => {
-  const MainLayer = Layer.merge(LivePrismaLayer, PrismaService.Default);
+// PrismaService.Default depends on PrismaClientService, so merge them
+const MainLayer = Layer.merge(LivePrismaLayer, PrismaService.Default);
 
+describe("Prisma 6 Effect Generator", () => {
   it.effect("should create and find a user", () =>
     Effect.gen(function* () {
       const prisma = yield* PrismaService;

@@ -2,4 +2,8 @@ node_modules
 .DS_Store
 *.tsbuildinfo
 tests/generated
+tests/prisma6/generated
+tests/prisma6/node_modules
+tests/prisma7/generated
+tests/prisma7/node_modules
 *.db
