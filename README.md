@@ -119,15 +119,48 @@ The generated `PrismaService` mirrors your Prisma Client API but returns `Effect
 
 ### Error Handling
 
-All operations return an `Effect` that can fail with `PrismaError`.
+Operations return typed errors that you can handle with Effect's error handling utilities:
 
 ```typescript
-export class PrismaError extends Data.TaggedError("PrismaError")<{
-  error: unknown;
-  operation: string;
-  model: string;
-}> {}
+import {
+  PrismaService,
+  PrismaUniqueConstraintError,
+  PrismaRecordNotFoundError,
+  PrismaForeignKeyConstraintError,
+} from "@prisma/effect";
+
+const program = Effect.gen(function* () {
+  const prisma = yield* PrismaService;
+
+  // Handle specific error types with catchTag
+  const user = yield* prisma.user
+    .create({ data: { email: "alice@example.com" } })
+    .pipe(
+      Effect.catchTag("PrismaUniqueConstraintError", (error) => {
+        console.log(`Duplicate email: ${error.cause.code}`); // P2002
+        return Effect.succeed(null);
+      }),
+    );
+
+  // OrThrow methods return PrismaRecordNotFoundError
+  const found = yield* prisma.user
+    .findUniqueOrThrow({ where: { id: 999 } })
+    .pipe(
+      Effect.catchTag("PrismaRecordNotFoundError", () =>
+        Effect.succeed(null),
+      ),
+    );
+});
 ```
+
+**Available error types:**
+
+| Error Type | Prisma Code | When it occurs |
+|------------|-------------|----------------|
+| `PrismaUniqueConstraintError` | P2002 | Duplicate unique field |
+| `PrismaRecordNotFoundError` | P2025 | `findUniqueOrThrow`, `findFirstOrThrow`, `update`, `delete` on non-existent |
+| `PrismaForeignKeyConstraintError` | P2003 | Invalid foreign key reference |
+| `PrismaError` | * | All other Prisma errors |
 
 ### Transactions
 
@@ -137,38 +170,138 @@ The generated service includes a `$transaction` method that allows you to run mu
 const program = Effect.gen(function* () {
   const prisma = yield* PrismaService;
 
-  yield* prisma.$transaction(
+  const result = yield* prisma.$transaction(
     Effect.gen(function* () {
       const user = yield* prisma.user.create({ data: { name: "Alice" } });
-      yield* prisma.post.create({
+      const post = yield* prisma.post.create({
         data: { title: "Hello", authorId: user.id },
       });
+      return { user, post };
     }),
   );
 });
+```
+
+#### Transaction Rollback Behavior
+
+**Any uncaught error in the Effect error channel triggers a rollback:**
+
+```typescript
+// Rollback on Effect.fail()
+yield* prisma.$transaction(
+  Effect.gen(function* () {
+    yield* prisma.user.create({ data: { email: "alice@example.com" } });
+    yield* Effect.fail("Something went wrong"); // Triggers rollback
+  }),
+);
+// User is NOT created
+
+// Rollback on Prisma errors (e.g., findUniqueOrThrow)
+yield* prisma.$transaction(
+  Effect.gen(function* () {
+    yield* prisma.user.create({ data: { email: "bob@example.com" } });
+    yield* prisma.user.findUniqueOrThrow({ where: { id: 999 } }); // Throws!
+  }),
+);
+// User is NOT created
+```
+
+**Catching errors prevents rollback:**
+
+```typescript
+yield* prisma.$transaction(
+  Effect.gen(function* () {
+    yield* prisma.user.create({ data: { email: "alice@example.com" } });
+
+    // Catch the error - transaction continues
+    yield* prisma.user
+      .findUniqueOrThrow({ where: { id: 999 } })
+      .pipe(Effect.catchAll(() => Effect.succeed(null)));
+
+    yield* prisma.user.create({ data: { email: "bob@example.com" } });
+  }),
+);
+// Both users ARE created
+```
+
+**Custom error types are preserved:**
+
+```typescript
+class MyError extends Data.TaggedError("MyError")<{ message: string }> {}
+
+const error = yield* prisma
+  .$transaction(Effect.fail(new MyError({ message: "oops" })))
+  .pipe(Effect.flip);
+
+expect(error).toBeInstanceOf(MyError); // Type is preserved!
 ```
 
 ### Nested Transactions
 
-The `$transaction` method supports nesting. If you call `$transaction` within an existing transaction, it will reuse the parent transaction context. If any operation fails, the entire transaction (including the parent) is rolled back.
+Nested `$transaction` calls share the **same underlying database transaction**. There are no savepoints - all operations run in a single transaction that commits or rolls back together.
 
 ```typescript
-const program = Effect.gen(function* () {
-  const prisma = yield* PrismaService;
+yield* prisma.$transaction(
+  Effect.gen(function* () {
+    yield* prisma.user.create({ data: { name: "Outer" } });
 
-  yield* prisma.$transaction(
+    yield* prisma.$transaction(
+      Effect.gen(function* () {
+        yield* prisma.user.create({ data: { name: "Inner" } });
+      }),
+    );
+
+    yield* Effect.fail("Outer failure");
+  }),
+);
+// BOTH users are rolled back
+```
+
+#### Key Behaviors
+
+| Scenario | Result |
+|----------|--------|
+| Both succeed | All committed |
+| Inner fails (uncaught) | All rollback |
+| Inner succeeds, outer fails | All rollback |
+| Inner fails (caught), outer succeeds | **All committed** (including inner's data!) |
+
+> **Important:** When you catch an inner transaction's error, its writes are NOT rolled back because there are no savepoints. All operations share the same database transaction.
+
+#### Composable Service Functions
+
+Functions that use `$transaction` internally work seamlessly when called from an outer transaction:
+
+```typescript
+// Service function with its own transaction
+const UserService = {
+  createWithProfile: (email: string) =>
     Effect.gen(function* () {
-      // Operation 1
-      yield* prisma.user.create({ data: { name: "Parent" } });
-
-      // Nested transaction
-      yield* prisma.$transaction(
+      const prisma = yield* PrismaService;
+      return yield* prisma.$transaction(
         Effect.gen(function* () {
-          // Operation 2
-          yield* prisma.user.create({ data: { name: "Child" } });
+          const user = yield* prisma.user.create({ data: { email } });
+          yield* prisma.profile.create({ data: { userId: user.id } });
+          return user;
         }),
       );
     }),
-  );
-});
+};
+
+// Called standalone - creates its own transaction
+yield* UserService.createWithProfile("alice@example.com");
+
+// Called inside outer transaction - joins it
+yield* prisma.$transaction(
+  Effect.gen(function* () {
+    yield* UserService.createWithProfile("alice@example.com");
+    yield* UserService.createWithProfile("bob@example.com");
+    // If anything fails, both users are rolled back
+  }),
+);
 ```
+
+This pattern allows you to:
+1. Write self-contained service functions that are safe to call standalone
+2. Compose them in outer transactions for end-to-end atomicity
+3. Functions don't need to know if they're inside another transaction
