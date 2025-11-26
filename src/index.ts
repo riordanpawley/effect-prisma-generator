@@ -460,9 +460,15 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
   ) => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
-      const { transactionOptions, ...prismaOptions } = options ?? {}
-      const hasOptions = Object.keys(prismaOptions).length > 0
-      const prisma = new BasePrismaClient(hasOptions ? prismaOptions : undefined)
+      let prisma: BasePrismaClient
+      let transactionOptions: TransactionOptions | undefined
+      if (options) {
+        const { transactionOptions: txOpts, ...prismaOptions } = options
+        transactionOptions = txOpts
+        prisma = new BasePrismaClient(prismaOptions)
+      } else {
+        prisma = new BasePrismaClient()
+      }
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
       return {
         tx: prisma,
@@ -502,13 +508,14 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
   ) => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
-      const { transactionOptions = {}, ...prismaOptions } = yield* optionsEffect
+      const options = yield* optionsEffect
+      const { transactionOptions, ...prismaOptions } = options
       const prisma = new BasePrismaClient(prismaOptions)
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
       return {
         tx: prisma,
         client: prisma,
-        transactionOptions
+        transactionOptions: transactionOptions ?? {}
       }
     })
   )
@@ -895,9 +902,15 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
   ) => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
-      const { transactionOptions, ...prismaOptions } = options ?? {}
-      const hasOptions = Object.keys(prismaOptions).length > 0
-      const prisma = new BasePrismaClient(hasOptions ? prismaOptions : undefined)
+      let prisma: BasePrismaClient
+      let transactionOptions: TransactionOptions | undefined
+      if (options) {
+        const { transactionOptions: txOpts, ...prismaOptions } = options
+        transactionOptions = txOpts
+        prisma = new BasePrismaClient(prismaOptions)
+      } else {
+        prisma = new BasePrismaClient()
+      }
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
       return {
         tx: prisma,
@@ -937,13 +950,14 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
   ) => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
-      const { transactionOptions = {}, ...prismaOptions } = yield* optionsEffect
+      const options = yield* optionsEffect
+      const { transactionOptions, ...prismaOptions } = options
       const prisma = new BasePrismaClient(prismaOptions)
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
       return {
         tx: prisma,
         client: prisma,
-        transactionOptions
+        transactionOptions: transactionOptions ?? {}
       }
     })
   )
