@@ -8,4 +8,6 @@ tests/prisma7/generated
 tests/prisma7/node_modules
 tests/custom-error/generated
 tests/custom-error/node_modules
+tests/import-extension/generated
+tests/import-extension/node_modules
 *.db

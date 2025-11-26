@@ -2839,14 +2839,16 @@ describe("Prisma 6 Effect Generator", () => {
           },
         ) {}
 
-        // Build layer with proper dependencies
+        // Build layer with proper dependency chain:
+        // 1. PrismaLayer provides PrismaService (needed by repos)
+        // 2. RepoLayer provides UserRepo and PostRepo (needs PrismaService)
+        // 3. BatchPostService needs PostRepo and PrismaService
         const PrismaLayer = Layer.merge(LivePrismaLayer, PrismaService.Default);
         const RepoLayer = Layer.merge(UserRepo.Default, PostRepo.Default).pipe(
-          Layer.provide(PrismaLayer),
+          Layer.provideMerge(PrismaLayer),
         );
         const ServiceLayer = BatchPostService.Default.pipe(
-          Layer.provide(RepoLayer),
-          Layer.provide(PrismaLayer),
+          Layer.provideMerge(RepoLayer),
         );
 
         // Outer transaction calling service with inner transaction
