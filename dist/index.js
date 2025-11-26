@@ -354,7 +354,7 @@ async function generateUnifiedService(models, outputDir, clientImportPath, error
  */
 function generateCustomErrorService(customError, clientImportPath, rawSqlOperations, modelOperations) {
     return `${header}
-import { Cause, Context, Effect, Exit, Layer } from "effect"
+import { Context, Effect, Exit, Layer } from "effect"
 import { Service } from "effect/Effect"
 import { Prisma as PrismaNamespace, PrismaClient as BasePrismaClient } from "${clientImportPath}"
 import { ${customError.className}, mapPrismaError } from "${customError.path}"
@@ -405,33 +405,27 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    *
    * @example
    * // Prisma 6 with defaults
-   * const layer = PrismaClient.layer({})
+   * const layer = PrismaClient.layer()
    *
    * // With datasource URL override
    * const layer = PrismaClient.layer({ datasourceUrl: process.env.DATABASE_URL })
    *
    * // With default transaction options
-   * const layer = PrismaClient.layer({
-   *   transactionOptions: { isolationLevel: "Serializable" }
-   * })
+   * const layer = PrismaClient.layer(
+   *   { datasourceUrl: process.env.DATABASE_URL },
+   *   { isolationLevel: "Serializable" }
+   * )
    *
    * // Prisma 7 with adapter (required in v7)
    * const layer = PrismaClient.layer({ adapter: myAdapter })
    */
   static layer = (
-    options?: ConstructorParameters<typeof BasePrismaClient>[0] & { transactionOptions?: TransactionOptions }
+    options?: ConstructorParameters<typeof BasePrismaClient>[0],
+    transactionOptions?: TransactionOptions
   ) => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
-      let prisma: BasePrismaClient
-      let transactionOptions: TransactionOptions | undefined
-      if (options) {
-        const { transactionOptions: txOpts, ...prismaOptions } = options
-        transactionOptions = txOpts
-        prisma = new BasePrismaClient(prismaOptions)
-      } else {
-        prisma = new BasePrismaClient()
-      }
+      const prisma = options ? new BasePrismaClient(options) : new BasePrismaClient()
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
       return {
         tx: prisma,
@@ -459,21 +453,20 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    * // With transaction options
    * const layer = PrismaClient.layerEffect(
    *   Effect.gen(function* () {
-   *     return {
-   *       datasourceUrl: "...",
-   *       transactionOptions: { isolationLevel: "Serializable" }
-   *     }
-   *   })
+   *     const config = yield* ConfigService
+   *     return { datasourceUrl: config.databaseUrl }
+   *   }),
+   *   { isolationLevel: "Serializable" }
    * )
    */
   static layerEffect = <R, E>(
-    optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0] & { transactionOptions?: TransactionOptions }, E, R>
+    optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>,
+    transactionOptions?: TransactionOptions
   ) => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
       const options = yield* optionsEffect
-      const { transactionOptions, ...prismaOptions } = options
-      const prisma = new BasePrismaClient(prismaOptions)
+      const prisma = new BasePrismaClient(options)
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
       return {
         tx: prisma,
@@ -699,15 +692,16 @@ export class Prisma extends Service<Prisma>()("Prisma", {
    *
    * @example
    * // Prisma 6 with defaults
-   * const MainLayer = Prisma.layer({})
+   * const MainLayer = Prisma.layer()
    *
    * // With datasource URL override
    * const MainLayer = Prisma.layer({ datasourceUrl: process.env.DATABASE_URL })
    *
    * // With default transaction options
-   * const MainLayer = Prisma.layer({
-   *   transactionOptions: { isolationLevel: "Serializable", timeout: 10000 }
-   * })
+   * const MainLayer = Prisma.layer(
+   *   { datasourceUrl: process.env.DATABASE_URL },
+   *   { isolationLevel: "Serializable", timeout: 10000 }
+   * )
    *
    * // Prisma 7 with adapter
    * const MainLayer = Prisma.layer({ adapter: myAdapter })
@@ -716,8 +710,9 @@ export class Prisma extends Service<Prisma>()("Prisma", {
    * Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
    */
   static layer = (
-    options?: ConstructorParameters<typeof BasePrismaClient>[0] & { transactionOptions?: TransactionOptions }
-  ) => Layer.merge(PrismaClient.layer(options), Prisma.Default)
+    options?: ConstructorParameters<typeof BasePrismaClient>[0],
+    transactionOptions?: TransactionOptions
+  ) => Layer.merge(PrismaClient.layer(options, transactionOptions), Prisma.Default)
 
   /**
    * Create a complete Prisma layer where PrismaClient options are computed via an Effect.
@@ -735,16 +730,16 @@ export class Prisma extends Service<Prisma>()("Prisma", {
    * // With transaction options
    * const MainLayer = Prisma.layerEffect(
    *   Effect.gen(function* () {
-   *     return {
-   *       datasourceUrl: "...",
-   *       transactionOptions: { isolationLevel: "Serializable" }
-   *     }
-   *   })
+   *     const config = yield* ConfigService
+   *     return { datasourceUrl: config.databaseUrl }
+   *   }),
+   *   { isolationLevel: "Serializable" }
    * )
    */
   static layerEffect = <R, E>(
-    optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0] & { transactionOptions?: TransactionOptions }, E, R>
-  ) => Layer.merge(PrismaClient.layerEffect(optionsEffect), Prisma.Default)
+    optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>,
+    transactionOptions?: TransactionOptions
+  ) => Layer.merge(PrismaClient.layerEffect(optionsEffect, transactionOptions), Prisma.Default)
 
   /**
    * Complete default layer with both PrismaClient and Prisma service.
@@ -792,7 +787,7 @@ export const LivePrismaLayer = PrismaClient.Default
  */
 function generateDefaultErrorService(clientImportPath, rawSqlOperations, modelOperations) {
     return `${header}
-import { Cause, Context, Data, Effect, Exit, Layer } from "effect"
+import { Context, Data, Effect, Exit, Layer } from "effect"
 import { Service } from "effect/Effect"
 import { Prisma as PrismaNamespace, PrismaClient as BasePrismaClient } from "${clientImportPath}"
 
@@ -842,33 +837,27 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    *
    * @example
    * // Prisma 6 with defaults
-   * const layer = PrismaClient.layer({})
+   * const layer = PrismaClient.layer()
    *
    * // With datasource URL override
    * const layer = PrismaClient.layer({ datasourceUrl: process.env.DATABASE_URL })
    *
    * // With default transaction options
-   * const layer = PrismaClient.layer({
-   *   transactionOptions: { isolationLevel: "Serializable" }
-   * })
+   * const layer = PrismaClient.layer(
+   *   { datasourceUrl: process.env.DATABASE_URL },
+   *   { isolationLevel: "Serializable" }
+   * )
    *
    * // Prisma 7 with adapter (required in v7)
    * const layer = PrismaClient.layer({ adapter: myAdapter })
    */
   static layer = (
-    options?: ConstructorParameters<typeof BasePrismaClient>[0] & { transactionOptions?: TransactionOptions }
+    options?: ConstructorParameters<typeof BasePrismaClient>[0],
+    transactionOptions?: TransactionOptions
   ) => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
-      let prisma: BasePrismaClient
-      let transactionOptions: TransactionOptions | undefined
-      if (options) {
-        const { transactionOptions: txOpts, ...prismaOptions } = options
-        transactionOptions = txOpts
-        prisma = new BasePrismaClient(prismaOptions)
-      } else {
-        prisma = new BasePrismaClient()
-      }
+      const prisma = options ? new BasePrismaClient(options) : new BasePrismaClient()
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
       return {
         tx: prisma,
@@ -896,21 +885,20 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    * // With transaction options
    * const layer = PrismaClient.layerEffect(
    *   Effect.gen(function* () {
-   *     return {
-   *       datasourceUrl: "...",
-   *       transactionOptions: { isolationLevel: "Serializable" }
-   *     }
-   *   })
+   *     const config = yield* ConfigService
+   *     return { datasourceUrl: config.databaseUrl }
+   *   }),
+   *   { isolationLevel: "Serializable" }
    * )
    */
   static layerEffect = <R, E>(
-    optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0] & { transactionOptions?: TransactionOptions }, E, R>
+    optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>,
+    transactionOptions?: TransactionOptions
   ) => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
       const options = yield* optionsEffect
-      const { transactionOptions, ...prismaOptions } = options
-      const prisma = new BasePrismaClient(prismaOptions)
+      const prisma = new BasePrismaClient(options)
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
       return {
         tx: prisma,
@@ -1473,15 +1461,16 @@ export class Prisma extends Service<Prisma>()("Prisma", {
    *
    * @example
    * // Prisma 6 with defaults
-   * const MainLayer = Prisma.layer({})
+   * const MainLayer = Prisma.layer()
    *
    * // With datasource URL override
    * const MainLayer = Prisma.layer({ datasourceUrl: process.env.DATABASE_URL })
    *
    * // With default transaction options
-   * const MainLayer = Prisma.layer({
-   *   transactionOptions: { isolationLevel: "Serializable", timeout: 10000 }
-   * })
+   * const MainLayer = Prisma.layer(
+   *   { datasourceUrl: process.env.DATABASE_URL },
+   *   { isolationLevel: "Serializable", timeout: 10000 }
+   * )
    *
    * // Prisma 7 with adapter
    * const MainLayer = Prisma.layer({ adapter: myAdapter })
@@ -1490,8 +1479,9 @@ export class Prisma extends Service<Prisma>()("Prisma", {
    * Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
    */
   static layer = (
-    options?: ConstructorParameters<typeof BasePrismaClient>[0] & { transactionOptions?: TransactionOptions }
-  ) => Layer.merge(PrismaClient.layer(options), Prisma.Default)
+    options?: ConstructorParameters<typeof BasePrismaClient>[0],
+    transactionOptions?: TransactionOptions
+  ) => Layer.merge(PrismaClient.layer(options, transactionOptions), Prisma.Default)
 
   /**
    * Create a complete Prisma layer where PrismaClient options are computed via an Effect.
@@ -1509,16 +1499,16 @@ export class Prisma extends Service<Prisma>()("Prisma", {
    * // With transaction options
    * const MainLayer = Prisma.layerEffect(
    *   Effect.gen(function* () {
-   *     return {
-   *       datasourceUrl: "...",
-   *       transactionOptions: { isolationLevel: "Serializable" }
-   *     }
-   *   })
+   *     const config = yield* ConfigService
+   *     return { datasourceUrl: config.databaseUrl }
+   *   }),
+   *   { isolationLevel: "Serializable" }
    * )
    */
   static layerEffect = <R, E>(
-    optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0] & { transactionOptions?: TransactionOptions }, E, R>
-  ) => Layer.merge(PrismaClient.layerEffect(optionsEffect), Prisma.Default)
+    optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>,
+    transactionOptions?: TransactionOptions
+  ) => Layer.merge(PrismaClient.layerEffect(optionsEffect, transactionOptions), Prisma.Default)
 
   /**
    * Complete default layer with both PrismaClient and Prisma service.

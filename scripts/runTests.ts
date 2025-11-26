@@ -46,7 +46,7 @@ const runPrisma6Tests = Effect.gen(function* () {
   // Push DB schema (also runs generate via schema.prisma config)
   yield* runInDir("tests/prisma6", "npm", "exec", "prisma", "db", "push");
 
-  // Type check generated effect files with super strict settings
+  // Type check generated effect files with strictest settings (matching Chefy's tsconfig)
   yield* runInDir(
     "tests/prisma6",
     "npx",
@@ -55,6 +55,10 @@ const runPrisma6Tests = Effect.gen(function* () {
     "--strict",
     "--exactOptionalPropertyTypes",
     "--noUncheckedIndexedAccess",
+    "--noImplicitReturns",
+    "--noFallthroughCasesInSwitch",
+    "--noUnusedLocals",
+    "--noUnusedParameters",
     "--moduleResolution", "NodeNext",
     "--module", "NodeNext",
     "--target", "ES2022",
@@ -85,7 +89,7 @@ const runPrisma7Tests = Effect.gen(function* () {
   // Push DB schema (also runs generate via schema.prisma config)
   yield* runInDir("tests/prisma7", "npm", "exec", "prisma", "db", "push");
 
-  // Type check generated effect files with super strict settings
+  // Type check generated effect files with strictest settings (matching Chefy's tsconfig)
   yield* runInDir(
     "tests/prisma7",
     "npx",
@@ -94,6 +98,10 @@ const runPrisma7Tests = Effect.gen(function* () {
     "--strict",
     "--exactOptionalPropertyTypes",
     "--noUncheckedIndexedAccess",
+    "--noImplicitReturns",
+    "--noFallthroughCasesInSwitch",
+    "--noUnusedLocals",
+    "--noUnusedParameters",
     "--moduleResolution", "NodeNext",
     "--module", "NodeNext",
     "--target", "ES2022",
@@ -124,7 +132,7 @@ const runCustomErrorTests = Effect.gen(function* () {
   // Push DB schema (also runs generate via schema.prisma config)
   yield* runInDir("tests/custom-error", "npm", "exec", "prisma", "db", "push");
 
-  // Type check generated effect files with super strict settings
+  // Type check generated effect files with strictest settings (matching Chefy's tsconfig)
   yield* runInDir(
     "tests/custom-error",
     "npx",
@@ -133,6 +141,10 @@ const runCustomErrorTests = Effect.gen(function* () {
     "--strict",
     "--exactOptionalPropertyTypes",
     "--noUncheckedIndexedAccess",
+    "--noImplicitReturns",
+    "--noFallthroughCasesInSwitch",
+    "--noUnusedLocals",
+    "--noUnusedParameters",
     "--moduleResolution", "NodeNext",
     "--module", "NodeNext",
     "--target", "ES2022",
@@ -163,7 +175,7 @@ const runImportExtensionTests = Effect.gen(function* () {
   // Push DB schema (also runs generate via schema.prisma config)
   yield* runInDir("tests/import-extension", "npm", "exec", "prisma", "db", "push");
 
-  // Type check generated effect files with super strict settings
+  // Type check generated effect files with strictest settings (matching Chefy's tsconfig)
   yield* runInDir(
     "tests/import-extension",
     "npx",
@@ -172,6 +184,10 @@ const runImportExtensionTests = Effect.gen(function* () {
     "--strict",
     "--exactOptionalPropertyTypes",
     "--noUncheckedIndexedAccess",
+    "--noImplicitReturns",
+    "--noFallthroughCasesInSwitch",
+    "--noUnusedLocals",
+    "--noUnusedParameters",
     "--moduleResolution", "NodeNext",
     "--module", "NodeNext",
     "--target", "ES2022",
