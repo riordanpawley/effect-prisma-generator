@@ -461,7 +461,8 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
     PrismaClient,
     Effect.gen(function* () {
       const { transactionOptions, ...prismaOptions } = options ?? {}
-      const prisma = new BasePrismaClient(prismaOptions)
+      const hasOptions = Object.keys(prismaOptions).length > 0
+      const prisma = new BasePrismaClient(hasOptions ? prismaOptions : undefined)
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
       return {
         tx: prisma,
@@ -516,7 +517,7 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    * Default layer that creates a PrismaClient with no options.
    * Works with Prisma 6. For Prisma 7, use PrismaClient.layer() with adapter/accelerateUrl.
    */
-  static Default = PrismaClient.layer({} as ConstructorParameters<typeof BasePrismaClient>[0])
+  static Default = PrismaClient.layer()
 }
 
 // Re-export the custom error type for convenience
@@ -895,7 +896,8 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
     PrismaClient,
     Effect.gen(function* () {
       const { transactionOptions, ...prismaOptions } = options ?? {}
-      const prisma = new BasePrismaClient(prismaOptions)
+      const hasOptions = Object.keys(prismaOptions).length > 0
+      const prisma = new BasePrismaClient(hasOptions ? prismaOptions : undefined)
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
       return {
         tx: prisma,
@@ -950,7 +952,7 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    * Default layer that creates a PrismaClient with no options.
    * Works with Prisma 6. For Prisma 7, use PrismaClient.layer() with adapter/accelerateUrl.
    */
-  static Default = PrismaClient.layer({} as ConstructorParameters<typeof BasePrismaClient>[0])
+  static Default = PrismaClient.layer()
 }
 
 export class PrismaUniqueConstraintError extends Data.TaggedError("PrismaUniqueConstraintError")<{
