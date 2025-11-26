@@ -12,11 +12,10 @@
  */
 
 import { describe, expectTypeOf, it } from "@effect/vitest";
-import { Effect, Layer } from "effect";
+import { Effect } from "effect";
 import {
-  LivePrismaLayer,
-  PrismaService,
-  PrismaClientService,
+  Prisma,
+  PrismaClient,
   PrismaFindError,
   PrismaFindOrThrowError,
   PrismaCreateError,
@@ -24,7 +23,7 @@ import {
   PrismaDeleteError,
 } from "./generated/effect/index.js";
 
-const MainLayer = Layer.merge(LivePrismaLayer, PrismaService.Default);
+const MainLayer = Prisma.layer();
 
 // ============================================
 // Type-level tests - these verify types at compile time
@@ -38,7 +37,7 @@ describe("Type-level tests", () => {
   describe("Return type inference", () => {
     it.effect("findUnique without select returns full model | null", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const result = yield* prisma.user.findUnique({
           where: { id: 1 },
@@ -55,7 +54,7 @@ describe("Type-level tests", () => {
 
     it.effect("findUnique with select narrows to selected fields", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const result = yield* prisma.user.findUnique({
           where: { id: 1 },
@@ -72,7 +71,7 @@ describe("Type-level tests", () => {
 
     it.effect("findUniqueOrThrow returns non-null model", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         // Type-level check: verify the return type is non-null
         const effect = prisma.user.findUniqueOrThrow({
@@ -94,7 +93,7 @@ describe("Type-level tests", () => {
 
     it.effect("findMany returns array of models", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const result = yield* prisma.user.findMany();
 
@@ -110,7 +109,7 @@ describe("Type-level tests", () => {
 
     it.effect("findMany with select returns array of narrowed type", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const result = yield* prisma.user.findMany({
           select: { email: true },
@@ -122,7 +121,7 @@ describe("Type-level tests", () => {
 
     it("create returns created model (type-only)", () => {
       // Type-level check without runtime execution
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         const effect = prisma.user.create({
           data: { email: "test@example.com" },
         });
@@ -137,7 +136,7 @@ describe("Type-level tests", () => {
     });
 
     it("create with select narrows return type (type-only)", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         const effect = prisma.user.create({
           data: { email: "test@example.com" },
           select: { id: true },
@@ -156,7 +155,7 @@ describe("Type-level tests", () => {
   describe("Relation include types", () => {
     it.effect("include: { posts: true } adds posts array to return type", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const result = yield* prisma.user.findUnique({
           where: { id: 1 },
@@ -181,7 +180,7 @@ describe("Type-level tests", () => {
 
     it.effect("include with nested select narrows included relation", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const result = yield* prisma.user.findUnique({
           where: { id: 1 },
@@ -203,7 +202,7 @@ describe("Type-level tests", () => {
 
     it.effect("include with where filters posts (type unchanged)", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const result = yield* prisma.user.findUnique({
           where: { id: 1 },
@@ -232,7 +231,7 @@ describe("Type-level tests", () => {
 
     it.effect("post.findUnique with include: { author: true } adds author", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const result = yield* prisma.post.findUnique({
           where: { id: 1 },
@@ -256,7 +255,7 @@ describe("Type-level tests", () => {
 
     it.effect("deeply nested include (author with posts)", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const result = yield* prisma.post.findUnique({
           where: { id: 1 },
@@ -297,7 +296,7 @@ describe("Type-level tests", () => {
   describe("Select with relations", () => {
     it.effect("select with nested relation select", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const result = yield* prisma.user.findUnique({
           where: { id: 1 },
@@ -319,7 +318,7 @@ describe("Type-level tests", () => {
     // Test case for nested select with variable (reproduces issue with type inference)
     it.effect("select with nested relation using variable for nested select", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         // Define a reusable select object for User fields
         const selectAuthor = {
@@ -353,7 +352,7 @@ describe("Type-level tests", () => {
     // More complex: nested select with relation that has its own nested select
     it.effect("deeply nested select with variables", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const selectPost = {
           id: true,
@@ -400,7 +399,7 @@ describe("Type-level tests", () => {
       //
       // The issue is that nested relations are missing from the inferred result type
 
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         // Define expected result type
         type ExpectedPostWithAuthor = {
           id: number;
@@ -443,7 +442,7 @@ describe("Type-level tests", () => {
 
     // Test WITHOUT as const - this might fail due to type widening
     it("nested select WITHOUT as const should still infer correctly (type-only)", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         // Define select WITHOUT as const - this is the problematic pattern
         // TypeScript may widen { id: true } to { id: boolean }
         const selectAuthor = {
@@ -498,7 +497,7 @@ describe("Type-level tests", () => {
 
     it.effect("select: false excludes field (full relation selection)", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         // When using include: { posts: true }, you get all User fields + posts
         const result = yield* prisma.user.findUnique({
@@ -530,7 +529,7 @@ describe("Type-level tests", () => {
 
   describe("Error type inference", () => {
     it("findUnique has PrismaFindError error channel (type-only)", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         const effect = prisma.user.findUnique({ where: { id: 1 } });
 
         type ErrorType = Effect.Effect.Error<typeof effect>;
@@ -539,7 +538,7 @@ describe("Type-level tests", () => {
     });
 
     it("findUniqueOrThrow errors include PrismaFindOrThrowError (type-only)", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         const effect = prisma.user.findUniqueOrThrow({ where: { id: 1 } });
 
         type ErrorType = Effect.Effect.Error<typeof effect>;
@@ -548,7 +547,7 @@ describe("Type-level tests", () => {
     });
 
     it("create errors include PrismaCreateError (type-only)", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         const effect = prisma.user.create({ data: { email: "x@x.com" } });
 
         type ErrorType = Effect.Effect.Error<typeof effect>;
@@ -557,7 +556,7 @@ describe("Type-level tests", () => {
     });
 
     it("update errors include PrismaUpdateError (type-only)", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         const effect = prisma.user.update({
           where: { id: 1 },
           data: { name: "New" },
@@ -569,7 +568,7 @@ describe("Type-level tests", () => {
     });
 
     it("delete errors include PrismaDeleteError (type-only)", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         const effect = prisma.user.delete({ where: { id: 1 } });
 
         type ErrorType = Effect.Effect.Error<typeof effect>;
@@ -585,7 +584,7 @@ describe("Type-level tests", () => {
   describe("Where clause types", () => {
     it.effect("where accepts unique field lookup", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         // id is valid
         yield* prisma.user.findUnique({ where: { id: 1 } });
@@ -597,7 +596,7 @@ describe("Type-level tests", () => {
 
     it.effect("where accepts filter operators", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         // String filters
         yield* prisma.user.findMany({
@@ -622,7 +621,7 @@ describe("Type-level tests", () => {
 
     it.effect("where accepts logical operators", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         // AND
         yield* prisma.user.findMany({
@@ -649,7 +648,7 @@ describe("Type-level tests", () => {
 
     it.effect("where accepts relation filters", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         // some - at least one related record matches
         yield* prisma.user.findMany({
@@ -682,7 +681,7 @@ describe("Type-level tests", () => {
 
     it.effect("post where accepts author relation filter", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         // Filter posts by author properties
         yield* prisma.post.findMany({
@@ -711,7 +710,7 @@ describe("Type-level tests", () => {
 
   describe("Create data types (type-only)", () => {
     it("create requires required fields", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         // email is required
         prisma.user.create({
           data: { email: "required@example.com" },
@@ -725,7 +724,7 @@ describe("Type-level tests", () => {
     });
 
     it("create with nested relation (connect)", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         // Connect to existing user
         prisma.post.create({
           data: {
@@ -745,7 +744,7 @@ describe("Type-level tests", () => {
     });
 
     it("create with nested relation (create)", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         // Create nested posts when creating user
         prisma.user.create({
           data: {
@@ -762,7 +761,7 @@ describe("Type-level tests", () => {
     });
 
     it("create with nested relation (createMany)", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         prisma.user.create({
           data: {
             email: "bulk-author@example.com",
@@ -783,7 +782,7 @@ describe("Type-level tests", () => {
 
   describe("Update data types (type-only)", () => {
     it("update accepts partial data", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         // Only update name
         prisma.user.update({
           where: { id: 1 },
@@ -799,7 +798,7 @@ describe("Type-level tests", () => {
     });
 
     it("update with nested relation operations", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         // Create new related record
         prisma.user.update({
           where: { id: 1 },
@@ -886,7 +885,7 @@ describe("Type-level tests", () => {
 
   describe("Compile-time errors (invalid args)", () => {
     it("should error on invalid select field (type-only)", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         prisma.user.findUnique({
           where: { id: 1 },
           select: {
@@ -899,7 +898,7 @@ describe("Type-level tests", () => {
     });
 
     it("should error on invalid include field (type-only)", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         prisma.user.findUnique({
           where: { id: 1 },
           include: {
@@ -911,7 +910,7 @@ describe("Type-level tests", () => {
     });
 
     it("should error on invalid where field (type-only)", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         prisma.user.findMany({
           where: {
             // @ts-expect-error - 'invalid' is not a valid field
@@ -922,7 +921,7 @@ describe("Type-level tests", () => {
     });
 
     it("should error on wrong type in where (type-only)", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         prisma.user.findUnique({
           where: {
             // @ts-expect-error - id should be number, not string
@@ -933,7 +932,7 @@ describe("Type-level tests", () => {
     });
 
     it("should error on missing required field in create (type-only)", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         prisma.user.create({
           // @ts-expect-error - email is required
           data: { name: "Missing Email" },
@@ -942,7 +941,7 @@ describe("Type-level tests", () => {
     });
 
     it("should error on invalid nested relation name (type-only)", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         prisma.user.create({
           data: {
             email: "test@example.com",
@@ -954,7 +953,7 @@ describe("Type-level tests", () => {
     });
 
     it("should error on accessing unselected field (type-only)", () => {
-      const _typeCheck = async (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = async (prisma: Effect.Effect.Success<typeof Prisma>) => {
         // Simulate getting the result type
         type ResultType = Effect.Effect.Success<
           ReturnType<typeof prisma.user.findUnique<{ where: { id: number }; select: { id: true } }>>
@@ -993,7 +992,7 @@ describe("Type-level tests", () => {
   describe("OrderBy types", () => {
     it.effect("orderBy accepts model fields", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         yield* prisma.user.findMany({
           orderBy: { email: "asc" },
@@ -1012,7 +1011,7 @@ describe("Type-level tests", () => {
 
     it.effect("orderBy accepts relation count", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         yield* prisma.user.findMany({
           orderBy: {
@@ -1030,7 +1029,7 @@ describe("Type-level tests", () => {
   describe("Aggregation types", () => {
     it.effect("count returns number or object based on args", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         // Simple count returns number
         const simpleCount = yield* prisma.user.count();
@@ -1046,7 +1045,7 @@ describe("Type-level tests", () => {
 
     it.effect("aggregate returns typed aggregation result", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const result = yield* prisma.user.aggregate({
           _count: { id: true },
@@ -1064,7 +1063,7 @@ describe("Type-level tests", () => {
 
     it.effect("groupBy returns array with grouped fields", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const result = yield* prisma.user.groupBy({
           by: ["name"],
@@ -1087,7 +1086,7 @@ describe("Type-level tests", () => {
 
   describe("Pagination types (type-only)", () => {
     it("cursor accepts unique field", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         prisma.user.findMany({
           cursor: { id: 5 },
           take: 10,
@@ -1101,7 +1100,7 @@ describe("Type-level tests", () => {
     });
 
     it("take/skip accept numbers", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         prisma.user.findMany({
           take: 10,
           skip: 5,
@@ -1122,7 +1121,7 @@ describe("Type-level tests", () => {
 
   describe("Distinct types (type-only)", () => {
     it("distinct accepts model field names", () => {
-      const _typeCheck = (prisma: Effect.Effect.Success<typeof PrismaService>) => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         prisma.user.findMany({
           distinct: ["name"],
         });

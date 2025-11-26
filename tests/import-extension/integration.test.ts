@@ -60,7 +60,7 @@ describe("Import File Extension", () => {
       });
 
       const result = await Effect.runPromiseExit(
-        program.pipe(Effect.provide(Prisma.Live))
+        program.pipe(Effect.provide(Prisma.layer()))
       );
 
       expect(result._tag).toBe("Failure");
