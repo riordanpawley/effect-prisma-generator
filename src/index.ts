@@ -456,17 +456,17 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    * const layer = PrismaClient.layer({ adapter: myAdapter })
    */
   static layer = (
-    options: ConstructorParameters<typeof BasePrismaClient>[0] & { transactionOptions?: TransactionOptions } = {}
+    options?: ConstructorParameters<typeof BasePrismaClient>[0] & { transactionOptions?: TransactionOptions }
   ) => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
-      const { transactionOptions = {}, ...prismaOptions } = options
+      const { transactionOptions, ...prismaOptions } = options ?? {}
       const prisma = new BasePrismaClient(prismaOptions)
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
       return {
         tx: prisma,
         client: prisma,
-        transactionOptions
+        transactionOptions: transactionOptions ?? {}
       }
     })
   )
@@ -745,7 +745,7 @@ export class Prisma extends Service<Prisma>()("Prisma", {
    * Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
    */
   static layer = (
-    options: ConstructorParameters<typeof BasePrismaClient>[0] & { transactionOptions?: TransactionOptions } = {}
+    options?: ConstructorParameters<typeof BasePrismaClient>[0] & { transactionOptions?: TransactionOptions }
   ) => Layer.merge(PrismaClient.layer(options), Prisma.Default)
 
   /**
@@ -890,17 +890,17 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    * const layer = PrismaClient.layer({ adapter: myAdapter })
    */
   static layer = (
-    options: ConstructorParameters<typeof BasePrismaClient>[0] & { transactionOptions?: TransactionOptions } = {}
+    options?: ConstructorParameters<typeof BasePrismaClient>[0] & { transactionOptions?: TransactionOptions }
   ) => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
-      const { transactionOptions = {}, ...prismaOptions } = options
+      const { transactionOptions, ...prismaOptions } = options ?? {}
       const prisma = new BasePrismaClient(prismaOptions)
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
       return {
         tx: prisma,
         client: prisma,
-        transactionOptions
+        transactionOptions: transactionOptions ?? {}
       }
     })
   )
@@ -1516,7 +1516,7 @@ export class Prisma extends Service<Prisma>()("Prisma", {
    * Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
    */
   static layer = (
-    options: ConstructorParameters<typeof BasePrismaClient>[0] & { transactionOptions?: TransactionOptions } = {}
+    options?: ConstructorParameters<typeof BasePrismaClient>[0] & { transactionOptions?: TransactionOptions }
   ) => Layer.merge(PrismaClient.layer(options), Prisma.Default)
 
   /**
