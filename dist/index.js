@@ -716,12 +716,6 @@ export class Prisma extends Service<Prisma>()("Prisma", {
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
   ) => Layer.merge(PrismaClient.layerEffect(optionsEffect), Prisma.Default)
 
-  /**
-   * Default layer that calls layer() with no options.
-   * Works with Prisma 6 where all options are optional.
-   * For Prisma 7, you must use Prisma.layer() with adapter or accelerateUrl.
-   */
-  static Live = Prisma.layer()
 }
 
 // ============================================================================
@@ -748,11 +742,6 @@ export const makePrismaLayer = PrismaClient.layer
  */
 export const makePrismaLayerEffect = PrismaClient.layerEffect
 
-/**
- * @deprecated Use \`PrismaClient.layer()\` instead. Will be removed in next major version.
- * Note: For Prisma 7, you must provide adapter or accelerateUrl options.
- */
-export const LivePrismaLayer = PrismaClient.layer()
 
 `;
 }
@@ -1460,12 +1449,6 @@ export class Prisma extends Service<Prisma>()("Prisma", {
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
   ) => Layer.merge(PrismaClient.layerEffect(optionsEffect), Prisma.Default)
 
-  /**
-   * Default layer that calls layer() with no options.
-   * Works with Prisma 6 where all options are optional.
-   * For Prisma 7, you must use Prisma.layer() with adapter or accelerateUrl.
-   */
-  static Live = Prisma.layer()
 }
 
 // ============================================================================
@@ -1492,11 +1475,6 @@ export const makePrismaLayer = PrismaClient.layer
  */
 export const makePrismaLayerEffect = PrismaClient.layerEffect
 
-/**
- * @deprecated Use \`PrismaClient.layer()\` instead. Will be removed in next major version.
- * Note: For Prisma 7, you must provide adapter or accelerateUrl options.
- */
-export const LivePrismaLayer = PrismaClient.layer()
 
 `;
 }

@@ -2,20 +2,19 @@ import { describe, expect, expectTypeOf, it } from "@effect/vitest";
 import { Data, Effect, Layer } from "effect";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 import {
-  makePrismaLayer,
-  PrismaService,
+  Prisma,
+  PrismaClient,
   PrismaUniqueConstraintError,
   PrismaRecordNotFoundError,
   PrismaForeignKeyConstraintError,
 } from "./generated/effect/index.js";
-import { Prisma } from "./generated/client/index.js";
+import { Prisma as PrismaNamespace } from "./generated/client/index.js";
 
 // Create libSQL adapter for Prisma 7 - new API takes url directly
 const adapter = new PrismaLibSql({ url: "file:./dev.db" });
 
-// PrismaService.Default depends on PrismaClientService, so merge them
-const PrismaClientLayer = makePrismaLayer({ adapter });
-const MainLayer = Layer.merge(PrismaClientLayer, PrismaService.Default);
+// Prisma 7 requires adapter option
+const MainLayer = Prisma.layer({ adapter });
 
 describe("Prisma 7 Effect Generator", () => {
   // ============================================
@@ -25,7 +24,7 @@ describe("Prisma 7 Effect Generator", () => {
   describe("CRUD operations", () => {
     it.effect("create - should create a record", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `create-${Date.now()}@example.com`;
 
         const user = yield* prisma.user.create({
@@ -43,7 +42,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("findUnique - should find a record by unique field", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `find-unique-${Date.now()}@example.com`;
 
         const created = yield* prisma.user.create({
@@ -75,7 +74,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("findUniqueOrThrow - should throw when not found", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const error = yield* prisma.user
           .findUniqueOrThrow({ where: { id: 999999 } })
@@ -87,7 +86,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("findFirstOrThrow - should throw when not found", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const error = yield* prisma.user
           .findFirstOrThrow({ where: { id: 999999 } })
@@ -99,7 +98,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("findFirstOrThrow - should return record when found", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `find-first-throw-${Date.now()}@example.com`;
 
         const created = yield* prisma.user.create({
@@ -119,7 +118,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("findFirst - should find first matching record", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `find-first-${Date.now()}`;
 
         // Create multiple users
@@ -147,7 +146,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("findMany - should find multiple records with filters", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `find-many-${Date.now()}`;
 
         // Create test data
@@ -177,7 +176,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("update - should update a record", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `update-${Date.now()}@example.com`;
 
         const user = yield* prisma.user.create({
@@ -199,7 +198,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("upsert - should create or update", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `upsert-${Date.now()}@example.com`;
 
         // First upsert creates
@@ -228,7 +227,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("delete - should delete a record", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `delete-${Date.now()}@example.com`;
 
         const user = yield* prisma.user.create({
@@ -257,7 +256,7 @@ describe("Prisma 7 Effect Generator", () => {
   describe("Batch operations", () => {
     it.effect("createMany - should create multiple records", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `create-many-${Date.now()}`;
 
         const result = yield* prisma.user.createMany({
@@ -278,7 +277,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("createManyAndReturn - should create and return records", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `create-many-return-${Date.now()}`;
 
         const users = yield* prisma.user.createManyAndReturn({
@@ -302,7 +301,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("createManyAndReturn - should support select", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `create-many-select-${Date.now()}`;
 
         const users = yield* prisma.user.createManyAndReturn({
@@ -327,7 +326,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("updateMany - should update multiple records", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `update-many-${Date.now()}`;
 
         yield* prisma.user.createMany({
@@ -359,7 +358,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("updateManyAndReturn - should update and return records", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `update-many-return-${Date.now()}`;
 
         yield* prisma.user.createMany({
@@ -387,7 +386,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("updateManyAndReturn - should support select", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `update-many-select-${Date.now()}`;
 
         yield* prisma.user.createMany({
@@ -416,7 +415,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("deleteMany - should delete multiple records", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `delete-many-${Date.now()}`;
 
         yield* prisma.user.createMany({
@@ -442,7 +441,7 @@ describe("Prisma 7 Effect Generator", () => {
   describe("Aggregation operations", () => {
     it.effect("count - should count records", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `count-${Date.now()}`;
 
         yield* prisma.user.createMany({
@@ -468,7 +467,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("aggregate - should aggregate numeric fields", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `aggregate-${Date.now()}`;
 
         yield* prisma.user.createMany({
@@ -498,7 +497,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("groupBy - should group records", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `groupby-${Date.now()}`;
 
         yield* prisma.user.createMany({
@@ -534,7 +533,7 @@ describe("Prisma 7 Effect Generator", () => {
   describe("Pagination", () => {
     it.effect("should support take and skip pagination", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `pagination-${Date.now()}`;
 
         // Create 5 users
@@ -573,7 +572,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should support cursor-based pagination", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `cursor-${Date.now()}`;
 
         // Create 5 users and get their IDs
@@ -629,7 +628,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should support reverse pagination with negative take", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `reverse-${Date.now()}`;
 
         // Create users
@@ -678,7 +677,7 @@ describe("Prisma 7 Effect Generator", () => {
   describe("Relations", () => {
     it.effect("should create records with relations", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `relations-${Date.now()}@example.com`;
 
         // Create user with posts
@@ -707,7 +706,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should query with include", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `include-query-${Date.now()}@example.com`;
 
         const user = yield* prisma.user.create({
@@ -737,7 +736,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should query nested relations", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `nested-${Date.now()}@example.com`;
 
         const user = yield* prisma.user.create({
@@ -766,7 +765,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should update nested relations", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `nested-update-${Date.now()}@example.com`;
 
         // Create user with posts
@@ -810,7 +809,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should delete nested relations via cascade or explicit", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `nested-delete-${Date.now()}@example.com`;
 
         // Create user with posts
@@ -849,7 +848,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should connect/disconnect relations", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email1 = `connect-user1-${Date.now()}@example.com`;
         const email2 = `connect-user2-${Date.now()}@example.com`;
 
@@ -896,7 +895,7 @@ describe("Prisma 7 Effect Generator", () => {
   describe("Transactions", () => {
     it.effect("should commit successful transactions", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `tx-success-${Date.now()}@example.com`;
 
         const result = yield* prisma.$transaction(
@@ -926,7 +925,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should rollback on failure", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `tx-rollback-${Date.now()}@example.com`;
 
         const program = prisma.$transaction(
@@ -948,7 +947,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should rollback nested transactions on outer failure", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email1 = `tx-nested-outer-${Date.now()}@example.com`;
         const email2 = `tx-nested-inner-${Date.now()}@example.com`;
 
@@ -976,7 +975,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("nested tx: inner fails uncaught - both rollback", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-inner-fail-${Date.now()}`;
 
         const program = prisma.$transaction(
@@ -1015,7 +1014,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("nested tx: inner succeeds, outer fails - both rollback", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-inner-success-${Date.now()}`;
 
         const program = prisma.$transaction(
@@ -1062,7 +1061,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("nested tx: both succeed - both commit", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-both-success-${Date.now()}`;
 
         const result = yield* prisma.$transaction(
@@ -1101,7 +1100,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("nested tx: deeply nested (3 levels) - all rollback on innermost fail", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-deep-${Date.now()}`;
 
         const program = prisma.$transaction(
@@ -1141,7 +1140,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("nested tx: catch inner failure - inner data PERSISTS (no savepoints)", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-catch-inner-${Date.now()}`;
 
         // IMPORTANT: Nested $transaction calls share the SAME database transaction!
@@ -1195,7 +1194,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("nested tx: inner creates data visible to outer within tx", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-visibility-${Date.now()}`;
 
         const result = yield* prisma.$transaction(
@@ -1242,14 +1241,14 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("nested tx: function with its own $transaction called from outer tx", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-fn-${Date.now()}`;
 
         // A reusable function that wraps its work in a transaction
         // This function doesn't know if it's being called inside another tx or not
         const createUserWithPost = (email: string, postTitle: string) =>
           Effect.gen(function* () {
-            const p = yield* PrismaService;
+            const p = yield* Prisma;
             return yield* p.$transaction(
               Effect.gen(function* () {
                 const user = yield* p.user.create({
@@ -1320,14 +1319,14 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("nested tx: composable service functions that use transactions", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-compose-${Date.now()}`;
 
         // Imagine these are service layer functions
         const UserService = {
           createWithProfile: (email: string) =>
             Effect.gen(function* () {
-              const p = yield* PrismaService;
+              const p = yield* Prisma;
               return yield* p.$transaction(
                 Effect.gen(function* () {
                   const user = yield* p.user.create({
@@ -1343,7 +1342,7 @@ describe("Prisma 7 Effect Generator", () => {
         const PostService = {
           createForUser: (userId: number, title: string) =>
             Effect.gen(function* () {
-              const p = yield* PrismaService;
+              const p = yield* Prisma;
               return yield* p.$transaction(
                 Effect.gen(function* () {
                   return yield* p.post.create({
@@ -1382,14 +1381,14 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("nested tx: service function failure rolls back entire composed tx", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-svc-fail-${Date.now()}`;
 
         // Service that always fails after creating data
         const FailingService = {
           createAndFail: (email: string) =>
             Effect.gen(function* () {
-              const p = yield* PrismaService;
+              const p = yield* Prisma;
               return yield* p.$transaction(
                 Effect.gen(function* () {
                   yield* p.user.create({
@@ -1434,7 +1433,7 @@ describe("Prisma 7 Effect Generator", () => {
           message: string;
         }> {}
 
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const error = yield* prisma
           .$transaction(Effect.fail(new CustomError({ message: "custom" })))
@@ -1449,7 +1448,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should rollback on Prisma errors within transaction", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `tx-prisma-error-${Date.now()}@example.com`;
 
         // First create a user outside transaction
@@ -1489,7 +1488,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should handle caught inner transaction failure", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email1 = `tx-outer-caught-${Date.now()}@example.com`;
 
         // Outer transaction succeeds even if inner fails (when caught)
@@ -1525,7 +1524,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should persist data between sequential transactions", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `tx-sequential-${Date.now()}@example.com`;
 
         // First transaction creates a user
@@ -1556,7 +1555,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should support transaction with multiple operations and return value", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-multi-${Date.now()}`;
 
         // Transaction with multiple operations returning computed value
@@ -1607,7 +1606,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should rollback all operations on late failure in transaction", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-late-fail-${Date.now()}`;
 
         const program = prisma.$transaction(
@@ -1656,7 +1655,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should rollback on Prisma OrThrow error same as Effect.fail", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-orthrow-${Date.now()}`;
 
         // Test 1: Effect.fail() behavior
@@ -1699,7 +1698,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should rollback on findFirstOrThrow error in transaction", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-firstorthrow-${Date.now()}`;
 
         const program = prisma.$transaction(
@@ -1742,7 +1741,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should rollback on update non-existent record in transaction", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-update-fail-${Date.now()}`;
 
         const program = prisma.$transaction(
@@ -1773,7 +1772,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should NOT rollback when catching findUniqueOrThrow error", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-catch-orthrow-${Date.now()}`;
 
         const result = yield* prisma.$transaction(
@@ -1812,7 +1811,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should NOT rollback when catching findFirstOrThrow error", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-catch-firstorthrow-${Date.now()}`;
 
         const result = yield* prisma.$transaction(
@@ -1858,7 +1857,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should NOT rollback when catching update error on non-existent", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-catch-update-${Date.now()}`;
 
         const result = yield* prisma.$transaction(
@@ -1896,7 +1895,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should NOT rollback when catching unique constraint error", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-catch-unique-${Date.now()}`;
         const duplicateEmail = `${prefix}-dup@example.com`;
 
@@ -1942,7 +1941,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should NOT rollback when catching FK constraint error", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-catch-fk-${Date.now()}`;
 
         const result = yield* prisma.$transaction(
@@ -1982,7 +1981,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should allow partial recovery with catchTag in transaction", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const prefix = `tx-partial-${Date.now()}`;
 
         const result = yield* prisma.$transaction(
@@ -2033,7 +2032,7 @@ describe("Prisma 7 Effect Generator", () => {
   describe("Error handling", () => {
     it.effect("should return PrismaUniqueConstraintError on duplicate", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `unique-error-${Date.now()}@example.com`;
 
         yield* prisma.user.create({ data: { email, name: "First" } });
@@ -2054,7 +2053,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should return PrismaRecordNotFoundError on OrThrow methods", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const findError = yield* prisma.user
           .findUniqueOrThrow({ where: { id: 999999 } })
@@ -2072,7 +2071,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should return PrismaForeignKeyConstraintError on invalid FK", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         // Try to create a post with a non-existent author
         const error = yield* prisma.post
@@ -2093,7 +2092,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should return PrismaRecordNotFoundError on update non-existent", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const error = yield* prisma.user
           .update({
@@ -2108,7 +2107,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("should return PrismaRecordNotFoundError on delete non-existent", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const error = yield* prisma.user
           .delete({ where: { id: 999999 } })
@@ -2126,7 +2125,7 @@ describe("Prisma 7 Effect Generator", () => {
   describe("Type narrowing", () => {
     it.effect("select should narrow return type", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `type-select-${Date.now()}@example.com`;
 
         const user = yield* prisma.user.create({
@@ -2150,7 +2149,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("include should add relations to type", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `type-include-${Date.now()}@example.com`;
 
         const user = yield* prisma.user.create({
@@ -2182,7 +2181,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("findMany should return narrowed array type", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const users = yield* prisma.user.findMany({
           select: { email: true },
@@ -2194,7 +2193,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("no select should return full model", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `type-full-${Date.now()}@example.com`;
 
         const user = yield* prisma.user.create({
@@ -2224,14 +2223,14 @@ describe("Prisma 7 Effect Generator", () => {
   describe("Raw queries", () => {
     it.effect("$queryRaw should execute raw SELECT", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `raw-query-${Date.now()}@example.com`;
 
         yield* prisma.user.create({ data: { email, name: "Raw Query Test" } });
 
         // Use Prisma.sql to create the SQL object
         const result = yield* prisma.$queryRaw<{ email: string }[]>(
-          Prisma.sql`SELECT email FROM User WHERE email = ${email}`
+          PrismaNamespace.sql`SELECT email FROM User WHERE email = ${email}`
         );
 
         expect(result).toHaveLength(1);
@@ -2244,14 +2243,14 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("$executeRaw should execute raw mutations", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `raw-execute-${Date.now()}@example.com`;
 
         yield* prisma.user.create({ data: { email, name: "Original" } });
 
         // Use Prisma.sql to create the SQL object
         const affected = yield* prisma.$executeRaw(
-          Prisma.sql`UPDATE User SET name = 'Updated via Raw' WHERE email = ${email}`
+          PrismaNamespace.sql`UPDATE User SET name = 'Updated via Raw' WHERE email = ${email}`
         );
 
         expect(affected).toBe(1);
@@ -2266,7 +2265,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("$queryRawUnsafe should execute unsafe SELECT", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `raw-unsafe-query-${Date.now()}@example.com`;
 
         yield* prisma.user.create({ data: { email, name: "Unsafe Query Test" } });
@@ -2287,7 +2286,7 @@ describe("Prisma 7 Effect Generator", () => {
 
     it.effect("$executeRawUnsafe should execute unsafe mutations", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `raw-unsafe-execute-${Date.now()}@example.com`;
 
         yield* prisma.user.create({ data: { email, name: "Original" } });

@@ -1,19 +1,17 @@
 import { describe, expect, expectTypeOf, it } from "@effect/vitest";
-import { Effect, Layer } from "effect";
+import { Effect } from "effect";
 import {
-  LivePrismaLayer,
-  PrismaService,
+  Prisma,
   MyPrismaError,
 } from "./generated/effect/index.js";
 
-// PrismaService.Default depends on PrismaClientService, so merge them
-const MainLayer = Layer.merge(LivePrismaLayer, PrismaService.Default);
+const MainLayer = Prisma.layer();
 
 describe("Custom Error Generator", () => {
   describe("Error type verification", () => {
     it.effect("should use custom error type for all operations", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         // Create a user
         const email = `custom-error-${Date.now()}@example.com`;
@@ -30,7 +28,7 @@ describe("Custom Error Generator", () => {
 
     it.effect("findUniqueOrThrow - should return custom error type", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const error = yield* prisma.user
           .findUniqueOrThrow({ where: { id: 999999 } })
@@ -46,7 +44,7 @@ describe("Custom Error Generator", () => {
 
     it.effect("create - should return custom error for unique constraint violation", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
         const email = `unique-constraint-${Date.now()}@example.com`;
 
         // Create first user
@@ -72,7 +70,7 @@ describe("Custom Error Generator", () => {
 
     it.effect("update - should return custom error when record not found", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const error = yield* prisma.user
           .update({
@@ -91,7 +89,7 @@ describe("Custom Error Generator", () => {
 
     it.effect("delete - should return custom error when record not found", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         const error = yield* prisma.user
           .delete({ where: { id: 999999 } })
@@ -109,7 +107,7 @@ describe("Custom Error Generator", () => {
   describe("Type-level tests", () => {
     it.effect("errors from all operations should be MyPrismaError", () =>
       Effect.gen(function* () {
-        const prisma = yield* PrismaService;
+        const prisma = yield* Prisma;
 
         // These type assertions verify that all operations use MyPrismaError
         // They don't run at runtime but will fail TypeScript compilation if wrong
