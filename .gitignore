@@ -11,3 +11,4 @@ tests/custom-error/node_modules
 tests/import-extension/generated
 tests/import-extension/node_modules
 *.db
+tests/benchmark/generated
