@@ -1,6 +1,6 @@
 {
   "name": "@riordanpawley/effect-prisma-generator",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Prisma generator for Effect (fork with Prisma 7 support)",
   "main": "dist/index.js",
   "bin": {
