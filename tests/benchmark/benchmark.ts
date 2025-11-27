@@ -117,7 +117,7 @@ async function runBenchmark(): Promise<BenchmarkResult> {
   // Run tsc multiple times and take the average
   const runs = 3;
   const times: number[] = [];
-  let lastResult = { success: true, error: undefined as string | undefined };
+  let lastResult: { success: boolean; error?: string } = { success: true };
 
   for (let i = 0; i < runs; i++) {
     process.stdout.write(`  Run ${i + 1}/${runs}: `);
