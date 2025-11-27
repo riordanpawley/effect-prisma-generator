@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.1] (2025-11-27)
+
+### Performance Improvements
+
+* **types:** Optimize TypeScript compilation with type aliases - Pre-compute Args types for each model operation at the top of the file instead of inline, reducing type computation from O(operations * 2) to O(operations + 1) per model. This significantly improves tsc performance on large schemas (60+ models).
+* **types:** Remove `PrismaNamespace.Exact` wrapper which was forcing TypeScript to compute Args types twice per function. The extends constraint alone provides sufficient type safety.
+
+### Bug Fixes
+
+* **tests:** Explicitly run `prisma generate` in Prisma 7 tests - Prisma 7 with `prisma.config.ts` doesn't auto-run generators during `db push`, unlike Prisma 6. Added explicit generate step to ensure CI passes.
+
+### Testing
+
+* **benchmark:** Add benchmark test package with large schema (60+ models) to measure TypeScript compilation performance improvements
+
 ## [0.5.0] (2025-11-26)
 
 ### BREAKING CHANGES
