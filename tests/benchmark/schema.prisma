@@ -1,0 +1,985 @@
+// Large Prisma schema for benchmarking TypeScript compilation performance
+// This simulates a real-world e-commerce/SaaS application
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+generator effect {
+  provider         = "../../dist/index.js"
+  output           = "./generated/effect"
+  clientImportPath = "../client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ==================== USER & AUTH ====================
+
+model User {
+  id              Int              @id @default(autoincrement())
+  email           String           @unique
+  username        String           @unique
+  passwordHash    String
+  firstName       String?
+  lastName        String?
+  avatarUrl       String?
+  bio             String?
+  isActive        Boolean          @default(true)
+  isVerified      Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  profile         UserProfile?
+  sessions        Session[]
+  orders          Order[]
+  reviews         Review[]
+  wishlist        WishlistItem[]
+  cart            CartItem[]
+  addresses       Address[]
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+  subscriptions   Subscription[]
+  payments        Payment[]
+  tickets         SupportTicket[]
+  comments        Comment[]
+  likes           Like[]
+  followers       Follow[]         @relation("Followers")
+  following       Follow[]         @relation("Following")
+  organizations   OrganizationMember[]
+  apiKeys         ApiKey[]
+  webhooks        Webhook[]
+}
+
+model UserProfile {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique
+  user            User      @relation(fields: [userId], references: [id])
+  dateOfBirth     DateTime?
+  phoneNumber     String?
+  timezone        String    @default("UTC")
+  language        String    @default("en")
+  currency        String    @default("USD")
+  theme           String    @default("light")
+  emailNotifications Boolean @default(true)
+  pushNotifications  Boolean @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Session {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  token           String    @unique
+  ipAddress       String?
+  userAgent       String?
+  expiresAt       DateTime
+  createdAt       DateTime  @default(now())
+}
+
+model ApiKey {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  name            String
+  keyHash         String    @unique
+  lastUsedAt      DateTime?
+  expiresAt       DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+}
+
+// ==================== ORGANIZATIONS ====================
+
+model Organization {
+  id              Int       @id @default(autoincrement())
+  name            String
+  slug            String    @unique
+  description     String?
+  logoUrl         String?
+  website         String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  members         OrganizationMember[]
+  teams           Team[]
+  projects        Project[]
+  invitations     OrganizationInvitation[]
+}
+
+model OrganizationMember {
+  id              Int          @id @default(autoincrement())
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  userId          Int
+  user            User         @relation(fields: [userId], references: [id])
+  role            String       @default("member")
+  joinedAt        DateTime     @default(now())
+
+  @@unique([organizationId, userId])
+}
+
+model OrganizationInvitation {
+  id              Int          @id @default(autoincrement())
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  email           String
+  role            String       @default("member")
+  token           String       @unique
+  expiresAt       DateTime
+  createdAt       DateTime     @default(now())
+}
+
+model Team {
+  id              Int          @id @default(autoincrement())
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  name            String
+  description     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  members         TeamMember[]
+  projects        ProjectTeam[]
+}
+
+model TeamMember {
+  id              Int       @id @default(autoincrement())
+  teamId          Int
+  team            Team      @relation(fields: [teamId], references: [id])
+  userId          Int
+  role            String    @default("member")
+  joinedAt        DateTime  @default(now())
+
+  @@unique([teamId, userId])
+}
+
+// ==================== PROJECTS ====================
+
+model Project {
+  id              Int          @id @default(autoincrement())
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  name            String
+  slug            String
+  description     String?
+  isPublic        Boolean      @default(false)
+  isArchived      Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  teams           ProjectTeam[]
+  tasks           Task[]
+  milestones      Milestone[]
+  documents       Document[]
+
+  @@unique([organizationId, slug])
+}
+
+model ProjectTeam {
+  id              Int       @id @default(autoincrement())
+  projectId       Int
+  project         Project   @relation(fields: [projectId], references: [id])
+  teamId          Int
+  team            Team      @relation(fields: [teamId], references: [id])
+  permissions     String    @default("read")
+
+  @@unique([projectId, teamId])
+}
+
+model Task {
+  id              Int        @id @default(autoincrement())
+  projectId       Int
+  project         Project    @relation(fields: [projectId], references: [id])
+  parentId        Int?
+  parent          Task?      @relation("TaskHierarchy", fields: [parentId], references: [id])
+  children        Task[]     @relation("TaskHierarchy")
+  milestoneId     Int?
+  milestone       Milestone? @relation(fields: [milestoneId], references: [id])
+  title           String
+  description     String?
+  status          String     @default("pending")
+  priority        String     @default("medium")
+  dueDate         DateTime?
+  estimatedHours  Float?
+  actualHours     Float?
+  assigneeId      Int?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  tags            TaskTag[]
+  comments        TaskComment[]
+  attachments     TaskAttachment[]
+  timeEntries     TimeEntry[]
+}
+
+model Milestone {
+  id              Int       @id @default(autoincrement())
+  projectId       Int
+  project         Project   @relation(fields: [projectId], references: [id])
+  title           String
+  description     String?
+  dueDate         DateTime?
+  status          String    @default("active")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tasks           Task[]
+}
+
+model TaskTag {
+  id              Int       @id @default(autoincrement())
+  taskId          Int
+  task            Task      @relation(fields: [taskId], references: [id])
+  tagId           Int
+  tag             Tag       @relation(fields: [tagId], references: [id])
+
+  @@unique([taskId, tagId])
+}
+
+model Tag {
+  id              Int       @id @default(autoincrement())
+  name            String    @unique
+  color           String    @default("#808080")
+  createdAt       DateTime  @default(now())
+
+  tasks           TaskTag[]
+}
+
+model TaskComment {
+  id              Int       @id @default(autoincrement())
+  taskId          Int
+  task            Task      @relation(fields: [taskId], references: [id])
+  authorId        Int
+  content         String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model TaskAttachment {
+  id              Int       @id @default(autoincrement())
+  taskId          Int
+  task            Task      @relation(fields: [taskId], references: [id])
+  fileName        String
+  fileUrl         String
+  fileSize        Int
+  mimeType        String
+  uploadedAt      DateTime  @default(now())
+}
+
+model TimeEntry {
+  id              Int       @id @default(autoincrement())
+  taskId          Int
+  task            Task      @relation(fields: [taskId], references: [id])
+  userId          Int
+  description     String?
+  hours           Float
+  date            DateTime
+  createdAt       DateTime  @default(now())
+}
+
+model Document {
+  id              Int       @id @default(autoincrement())
+  projectId       Int
+  project         Project   @relation(fields: [projectId], references: [id])
+  title           String
+  content         String?
+  version         Int       @default(1)
+  isPublished     Boolean   @default(false)
+  createdById     Int
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  revisions       DocumentRevision[]
+}
+
+model DocumentRevision {
+  id              Int       @id @default(autoincrement())
+  documentId      Int
+  document        Document  @relation(fields: [documentId], references: [id])
+  content         String
+  version         Int
+  createdById     Int
+  createdAt       DateTime  @default(now())
+}
+
+// ==================== E-COMMERCE ====================
+
+model Category {
+  id              Int       @id @default(autoincrement())
+  parentId        Int?
+  parent          Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children        Category[] @relation("CategoryHierarchy")
+  name            String
+  slug            String    @unique
+  description     String?
+  imageUrl        String?
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  products        ProductCategory[]
+}
+
+model Product {
+  id              Int       @id @default(autoincrement())
+  sku             String    @unique
+  name            String
+  slug            String    @unique
+  description     String?
+  shortDescription String?
+  price           Float
+  compareAtPrice  Float?
+  costPrice       Float?
+  quantity        Int       @default(0)
+  lowStockThreshold Int     @default(10)
+  weight          Float?
+  width           Float?
+  height          Float?
+  depth           Float?
+  isActive        Boolean   @default(true)
+  isFeatured      Boolean   @default(false)
+  isDigital       Boolean   @default(false)
+  metaTitle       String?
+  metaDescription String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  categories      ProductCategory[]
+  variants        ProductVariant[]
+  images          ProductImage[]
+  reviews         Review[]
+  wishlistItems   WishlistItem[]
+  cartItems       CartItem[]
+  orderItems      OrderItem[]
+  inventoryMovements InventoryMovement[]
+  relatedProducts ProductRelation[] @relation("RelatedFrom")
+  relatedTo       ProductRelation[] @relation("RelatedTo")
+}
+
+model ProductCategory {
+  id              Int       @id @default(autoincrement())
+  productId       Int
+  product         Product   @relation(fields: [productId], references: [id])
+  categoryId      Int
+  category        Category  @relation(fields: [categoryId], references: [id])
+
+  @@unique([productId, categoryId])
+}
+
+model ProductVariant {
+  id              Int       @id @default(autoincrement())
+  productId       Int
+  product         Product   @relation(fields: [productId], references: [id])
+  sku             String    @unique
+  name            String
+  price           Float?
+  quantity        Int       @default(0)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  attributes      VariantAttribute[]
+  cartItems       CartItem[]
+  orderItems      OrderItem[]
+}
+
+model VariantAttribute {
+  id              Int            @id @default(autoincrement())
+  variantId       Int
+  variant         ProductVariant @relation(fields: [variantId], references: [id])
+  name            String
+  value           String
+
+  @@unique([variantId, name])
+}
+
+model ProductImage {
+  id              Int       @id @default(autoincrement())
+  productId       Int
+  product         Product   @relation(fields: [productId], references: [id])
+  url             String
+  altText         String?
+  sortOrder       Int       @default(0)
+  isPrimary       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+}
+
+model ProductRelation {
+  id              Int       @id @default(autoincrement())
+  productId       Int
+  product         Product   @relation("RelatedFrom", fields: [productId], references: [id])
+  relatedProductId Int
+  relatedProduct  Product   @relation("RelatedTo", fields: [relatedProductId], references: [id])
+  type            String    @default("related")
+
+  @@unique([productId, relatedProductId])
+}
+
+model Review {
+  id              Int       @id @default(autoincrement())
+  productId       Int
+  product         Product   @relation(fields: [productId], references: [id])
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  rating          Int
+  title           String?
+  content         String?
+  isVerified      Boolean   @default(false)
+  isApproved      Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model WishlistItem {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  productId       Int
+  product         Product   @relation(fields: [productId], references: [id])
+  createdAt       DateTime  @default(now())
+
+  @@unique([userId, productId])
+}
+
+model CartItem {
+  id              Int             @id @default(autoincrement())
+  userId          Int
+  user            User            @relation(fields: [userId], references: [id])
+  productId       Int
+  product         Product         @relation(fields: [productId], references: [id])
+  variantId       Int?
+  variant         ProductVariant? @relation(fields: [variantId], references: [id])
+  quantity        Int             @default(1)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@unique([userId, productId, variantId])
+}
+
+// ==================== ORDERS & PAYMENTS ====================
+
+model Order {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  orderNumber     String    @unique
+  status          String    @default("pending")
+  subtotal        Float
+  taxAmount       Float     @default(0)
+  shippingAmount  Float     @default(0)
+  discountAmount  Float     @default(0)
+  totalAmount     Float
+  currency        String    @default("USD")
+  notes           String?
+  shippingAddressId Int?
+  shippingAddress Address?  @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
+  billingAddressId Int?
+  billingAddress  Address?  @relation("BillingAddress", fields: [billingAddressId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  items           OrderItem[]
+  payments        Payment[]
+  shipments       Shipment[]
+  refunds         Refund[]
+  history         OrderHistory[]
+  couponUsages    CouponUsage[]
+}
+
+model OrderItem {
+  id              Int             @id @default(autoincrement())
+  orderId         Int
+  order           Order           @relation(fields: [orderId], references: [id])
+  productId       Int
+  product         Product         @relation(fields: [productId], references: [id])
+  variantId       Int?
+  variant         ProductVariant? @relation(fields: [variantId], references: [id])
+  quantity        Int
+  unitPrice       Float
+  totalPrice      Float
+  createdAt       DateTime        @default(now())
+}
+
+model OrderHistory {
+  id              Int       @id @default(autoincrement())
+  orderId         Int
+  order           Order     @relation(fields: [orderId], references: [id])
+  status          String
+  note            String?
+  createdById     Int?
+  createdAt       DateTime  @default(now())
+}
+
+model Payment {
+  id              Int       @id @default(autoincrement())
+  orderId         Int?
+  order           Order?    @relation(fields: [orderId], references: [id])
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  subscriptionId  Int?
+  subscription    Subscription? @relation(fields: [subscriptionId], references: [id])
+  amount          Float
+  currency        String    @default("USD")
+  status          String    @default("pending")
+  paymentMethod   String
+  transactionId   String?   @unique
+  metadata        String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  refunds         Refund[]
+}
+
+model Refund {
+  id              Int       @id @default(autoincrement())
+  orderId         Int
+  order           Order     @relation(fields: [orderId], references: [id])
+  paymentId       Int
+  payment         Payment   @relation(fields: [paymentId], references: [id])
+  amount          Float
+  reason          String?
+  status          String    @default("pending")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Address {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  type            String    @default("shipping")
+  firstName       String
+  lastName        String
+  company         String?
+  addressLine1    String
+  addressLine2    String?
+  city            String
+  state           String?
+  postalCode      String
+  country         String
+  phone           String?
+  isDefault       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  shippingOrders  Order[]   @relation("ShippingAddress")
+  billingOrders   Order[]   @relation("BillingAddress")
+}
+
+model Shipment {
+  id              Int       @id @default(autoincrement())
+  orderId         Int
+  order           Order     @relation(fields: [orderId], references: [id])
+  carrier         String
+  trackingNumber  String?
+  status          String    @default("pending")
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model InventoryMovement {
+  id              Int       @id @default(autoincrement())
+  productId       Int
+  product         Product   @relation(fields: [productId], references: [id])
+  type            String
+  quantity        Int
+  reason          String?
+  referenceId     Int?
+  referenceType   String?
+  createdAt       DateTime  @default(now())
+}
+
+// ==================== COUPONS & PROMOTIONS ====================
+
+model Coupon {
+  id              Int       @id @default(autoincrement())
+  code            String    @unique
+  description     String?
+  type            String    @default("percentage")
+  value           Float
+  minOrderAmount  Float?
+  maxDiscount     Float?
+  usageLimit      Int?
+  usageCount      Int       @default(0)
+  perUserLimit    Int?
+  startsAt        DateTime?
+  expiresAt       DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  usages          CouponUsage[]
+}
+
+model CouponUsage {
+  id              Int       @id @default(autoincrement())
+  couponId        Int
+  coupon          Coupon    @relation(fields: [couponId], references: [id])
+  orderId         Int
+  order           Order     @relation(fields: [orderId], references: [id])
+  userId          Int
+  discountAmount  Float
+  usedAt          DateTime  @default(now())
+
+  @@unique([couponId, orderId])
+}
+
+// ==================== SUBSCRIPTIONS ====================
+
+model SubscriptionPlan {
+  id              Int       @id @default(autoincrement())
+  name            String
+  slug            String    @unique
+  description     String?
+  price           Float
+  currency        String    @default("USD")
+  interval        String    @default("month")
+  intervalCount   Int       @default(1)
+  trialDays       Int       @default(0)
+  features        String?
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  subscriptions   Subscription[]
+}
+
+model Subscription {
+  id              Int              @id @default(autoincrement())
+  userId          Int
+  user            User             @relation(fields: [userId], references: [id])
+  planId          Int
+  plan            SubscriptionPlan @relation(fields: [planId], references: [id])
+  status          String           @default("active")
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  canceledAt      DateTime?
+  cancelReason    String?
+  trialEndsAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  payments        Payment[]
+}
+
+// ==================== NOTIFICATIONS & SUPPORT ====================
+
+model Notification {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  type            String
+  title           String
+  content         String?
+  data            String?
+  isRead          Boolean   @default(false)
+  readAt          DateTime?
+  createdAt       DateTime  @default(now())
+}
+
+model SupportTicket {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  subject         String
+  description     String
+  status          String    @default("open")
+  priority        String    @default("medium")
+  category        String?
+  assignedToId    Int?
+  resolvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  messages        TicketMessage[]
+}
+
+model TicketMessage {
+  id              Int           @id @default(autoincrement())
+  ticketId        Int
+  ticket          SupportTicket @relation(fields: [ticketId], references: [id])
+  authorId        Int
+  content         String
+  isInternal      Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+}
+
+// ==================== CONTENT & SOCIAL ====================
+
+model BlogPost {
+  id              Int       @id @default(autoincrement())
+  authorId        Int
+  title           String
+  slug            String    @unique
+  excerpt         String?
+  content         String
+  featuredImage   String?
+  status          String    @default("draft")
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  categories      BlogPostCategory[]
+  comments        Comment[]
+  likes           Like[]
+}
+
+model BlogCategory {
+  id              Int       @id @default(autoincrement())
+  name            String
+  slug            String    @unique
+  description     String?
+  createdAt       DateTime  @default(now())
+
+  posts           BlogPostCategory[]
+}
+
+model BlogPostCategory {
+  id              Int          @id @default(autoincrement())
+  postId          Int
+  post            BlogPost     @relation(fields: [postId], references: [id])
+  categoryId      Int
+  category        BlogCategory @relation(fields: [categoryId], references: [id])
+
+  @@unique([postId, categoryId])
+}
+
+model Comment {
+  id              Int       @id @default(autoincrement())
+  postId          Int
+  post            BlogPost  @relation(fields: [postId], references: [id])
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  parentId        Int?
+  parent          Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies         Comment[] @relation("CommentReplies")
+  content         String
+  isApproved      Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Like {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  postId          Int
+  post            BlogPost  @relation(fields: [postId], references: [id])
+  createdAt       DateTime  @default(now())
+
+  @@unique([userId, postId])
+}
+
+model Follow {
+  id              Int       @id @default(autoincrement())
+  followerId      Int
+  follower        User      @relation("Following", fields: [followerId], references: [id])
+  followingId     Int
+  following       User      @relation("Followers", fields: [followingId], references: [id])
+  createdAt       DateTime  @default(now())
+
+  @@unique([followerId, followingId])
+}
+
+// ==================== AUDIT & WEBHOOKS ====================
+
+model AuditLog {
+  id              Int       @id @default(autoincrement())
+  userId          Int?
+  user            User?     @relation(fields: [userId], references: [id])
+  action          String
+  entityType      String
+  entityId        Int?
+  oldValues       String?
+  newValues       String?
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime  @default(now())
+}
+
+model Webhook {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  url             String
+  events          String
+  secret          String
+  isActive        Boolean   @default(true)
+  lastTriggeredAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  deliveries      WebhookDelivery[]
+}
+
+model WebhookDelivery {
+  id              Int       @id @default(autoincrement())
+  webhookId       Int
+  webhook         Webhook   @relation(fields: [webhookId], references: [id])
+  event           String
+  payload         String
+  responseStatus  Int?
+  responseBody    String?
+  duration        Int?
+  createdAt       DateTime  @default(now())
+}
+
+// ==================== SETTINGS & CONFIG ====================
+
+model Setting {
+  id              Int       @id @default(autoincrement())
+  key             String    @unique
+  value           String
+  type            String    @default("string")
+  group           String    @default("general")
+  isPublic        Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model EmailTemplate {
+  id              Int       @id @default(autoincrement())
+  name            String    @unique
+  subject         String
+  bodyHtml        String
+  bodyText        String?
+  variables       String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model ScheduledJob {
+  id              Int       @id @default(autoincrement())
+  name            String
+  cronExpression  String
+  handler         String
+  payload         String?
+  isActive        Boolean   @default(true)
+  lastRunAt       DateTime?
+  nextRunAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  runs            JobRun[]
+}
+
+model JobRun {
+  id              Int          @id @default(autoincrement())
+  jobId           Int
+  job             ScheduledJob @relation(fields: [jobId], references: [id])
+  status          String
+  output          String?
+  error           String?
+  startedAt       DateTime
+  completedAt     DateTime?
+}
+
+// ==================== ANALYTICS ====================
+
+model PageView {
+  id              Int       @id @default(autoincrement())
+  sessionId       String
+  userId          Int?
+  path            String
+  referrer        String?
+  userAgent       String?
+  ipAddress       String?
+  country         String?
+  city            String?
+  duration        Int?
+  createdAt       DateTime  @default(now())
+}
+
+model Event {
+  id              Int       @id @default(autoincrement())
+  sessionId       String
+  userId          Int?
+  name            String
+  category        String?
+  properties      String?
+  createdAt       DateTime  @default(now())
+}
+
+model Conversion {
+  id              Int       @id @default(autoincrement())
+  sessionId       String
+  userId          Int?
+  type            String
+  value           Float?
+  source          String?
+  medium          String?
+  campaign        String?
+  createdAt       DateTime  @default(now())
+}
+
+// ==================== MEDIA ====================
+
+model MediaFile {
+  id              Int       @id @default(autoincrement())
+  uploadedById    Int
+  fileName        String
+  originalName    String
+  mimeType        String
+  size            Int
+  url             String
+  thumbnailUrl    String?
+  width           Int?
+  height          Int?
+  duration        Int?
+  alt             String?
+  caption         String?
+  folderId        Int?
+  folder          MediaFolder? @relation(fields: [folderId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model MediaFolder {
+  id              Int       @id @default(autoincrement())
+  parentId        Int?
+  parent          MediaFolder? @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children        MediaFolder[] @relation("FolderHierarchy")
+  name            String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  files           MediaFile[]
+}
+
+// ==================== LOCALIZATION ====================
+
+model Locale {
+  id              Int       @id @default(autoincrement())
+  code            String    @unique
+  name            String
+  nativeName      String
+  isDefault       Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  translations    Translation[]
+}
+
+model Translation {
+  id              Int       @id @default(autoincrement())
+  localeId        Int
+  locale          Locale    @relation(fields: [localeId], references: [id])
+  key             String
+  value           String
+  namespace       String    @default("common")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([localeId, key, namespace])
+}

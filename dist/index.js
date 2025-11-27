@@ -126,13 +126,42 @@ function generateRawSqlOperations(customError) {
         })
       ),`;
 }
+/**
+ * Generate type aliases for a model to reduce redundant type computation.
+ * TypeScript performance is significantly improved when complex types are
+ * computed once and reused via aliases rather than inline.
+ */
+function generateModelTypeAliases(models) {
+    return models
+        .map((model) => {
+        const modelName = model.name;
+        const modelNameCamel = toCamelCase(modelName);
+        // Operations that need Args/Result type aliases
+        const operations = [
+            'findUnique', 'findUniqueOrThrow', 'findFirst', 'findFirstOrThrow',
+            'findMany', 'create', 'createMany', 'createManyAndReturn',
+            'delete', 'update', 'deleteMany', 'updateMany', 'updateManyAndReturn',
+            'upsert', 'count', 'aggregate', 'groupBy'
+        ];
+        const argsAliases = operations
+            .map(op => `type ${modelName}${capitalize(op)}Args = PrismaNamespace.Args<BasePrismaClient['${modelNameCamel}'], '${op}'>`)
+            .join('\n');
+        return argsAliases;
+    })
+        .join('\n\n');
+}
+function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
 function generateModelOperations(models, customError) {
     return models
         .map((model) => {
         const modelName = model.name;
         const modelNameCamel = toCamelCase(modelName);
-        // Type alias for the model delegate (e.g., BasePrismaClient['user'])
+        // Use pre-computed type alias for delegate
         const delegate = `BasePrismaClient['${modelNameCamel}']`;
+        // Helper to get pre-computed Args type alias
+        const argsType = (op) => `${modelName}${capitalize(op)}Args`;
         // Cast Promise results to ensure consistent typing across Prisma versions
         // This handles Prisma 7's GlobalOmitConfig and works fine with Prisma 6 too
         const promiseCast = (op, nullable = false) => {
@@ -153,9 +182,13 @@ function generateModelOperations(models, customError) {
         // Without custom error: use per-operation error types and mappers
         const errorType = (opErrorType) => customError ? customError.className : opErrorType;
         const mapperFn = (defaultMapper) => customError ? "mapError" : defaultMapper;
+        // Optimized signatures:
+        // - Use pre-computed Args type aliases instead of inline PrismaNamespace.Args
+        // - Remove Exact wrapper - the extends constraint already provides type safety
+        // - This reduces TypeScript's type computation workload significantly
         return `    ${modelNameCamel}: {
-      findUnique: <A extends PrismaNamespace.Args<${delegate}, 'findUnique'>>(
-        args: PrismaNamespace.Exact<A, PrismaNamespace.Args<${delegate}, 'findUnique'>>
+      findUnique: <A extends ${argsType('findUnique')}>(
+        args: A
       ): Effect.Effect<${resultType('findUnique', true)}, ${errorType('PrismaFindError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -164,8 +197,8 @@ function generateModelOperations(models, customError) {
           })
         ),
 
-      findUniqueOrThrow: <A extends PrismaNamespace.Args<${delegate}, 'findUniqueOrThrow'>>(
-        args: PrismaNamespace.Exact<A, PrismaNamespace.Args<${delegate}, 'findUniqueOrThrow'>>
+      findUniqueOrThrow: <A extends ${argsType('findUniqueOrThrow')}>(
+        args: A
       ): Effect.Effect<${resultType('findUniqueOrThrow')}, ${errorType('PrismaFindOrThrowError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -174,8 +207,8 @@ function generateModelOperations(models, customError) {
           })
         ),
 
-      findFirst: <A extends PrismaNamespace.Args<${delegate}, 'findFirst'> = {}>(
-        args?: PrismaNamespace.Exact<A, PrismaNamespace.Args<${delegate}, 'findFirst'>>
+      findFirst: <A extends ${argsType('findFirst')} = {}>(
+        args?: A
       ): Effect.Effect<${resultType('findFirst', true)}, ${errorType('PrismaFindError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -184,8 +217,8 @@ function generateModelOperations(models, customError) {
           })
         ),
 
-      findFirstOrThrow: <A extends PrismaNamespace.Args<${delegate}, 'findFirstOrThrow'> = {}>(
-        args?: PrismaNamespace.Exact<A, PrismaNamespace.Args<${delegate}, 'findFirstOrThrow'>>
+      findFirstOrThrow: <A extends ${argsType('findFirstOrThrow')} = {}>(
+        args?: A
       ): Effect.Effect<${resultType('findFirstOrThrow')}, ${errorType('PrismaFindOrThrowError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -194,8 +227,8 @@ function generateModelOperations(models, customError) {
           })
         ),
 
-      findMany: <A extends PrismaNamespace.Args<${delegate}, 'findMany'> = {}>(
-        args?: PrismaNamespace.Exact<A, PrismaNamespace.Args<${delegate}, 'findMany'>>
+      findMany: <A extends ${argsType('findMany')} = {}>(
+        args?: A
       ): Effect.Effect<${resultType('findMany')}, ${errorType('PrismaFindError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -204,8 +237,8 @@ function generateModelOperations(models, customError) {
           })
         ),
 
-      create: <A extends PrismaNamespace.Args<${delegate}, 'create'>>(
-        args: PrismaNamespace.Exact<A, PrismaNamespace.Args<${delegate}, 'create'>>
+      create: <A extends ${argsType('create')}>(
+        args: A
       ): Effect.Effect<${resultType('create')}, ${errorType('PrismaCreateError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -215,7 +248,7 @@ function generateModelOperations(models, customError) {
         ),
 
       createMany: (
-        args?: PrismaNamespace.Args<${delegate}, 'createMany'>
+        args?: ${argsType('createMany')}
       ): Effect.Effect<PrismaNamespace.BatchPayload, ${errorType('PrismaCreateError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -224,8 +257,8 @@ function generateModelOperations(models, customError) {
           })
         ),
 
-      createManyAndReturn: <A extends PrismaNamespace.Args<${delegate}, 'createManyAndReturn'>>(
-        args: PrismaNamespace.Exact<A, PrismaNamespace.Args<${delegate}, 'createManyAndReturn'>>
+      createManyAndReturn: <A extends ${argsType('createManyAndReturn')}>(
+        args: A
       ): Effect.Effect<${resultType('createManyAndReturn')}, ${errorType('PrismaCreateError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -234,8 +267,8 @@ function generateModelOperations(models, customError) {
           })
         ),
 
-      delete: <A extends PrismaNamespace.Args<${delegate}, 'delete'>>(
-        args: PrismaNamespace.Exact<A, PrismaNamespace.Args<${delegate}, 'delete'>>
+      delete: <A extends ${argsType('delete')}>(
+        args: A
       ): Effect.Effect<${resultType('delete')}, ${errorType('PrismaDeleteError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -244,8 +277,8 @@ function generateModelOperations(models, customError) {
           })
         ),
 
-      update: <A extends PrismaNamespace.Args<${delegate}, 'update'>>(
-        args: PrismaNamespace.Exact<A, PrismaNamespace.Args<${delegate}, 'update'>>
+      update: <A extends ${argsType('update')}>(
+        args: A
       ): Effect.Effect<${resultType('update')}, ${errorType('PrismaUpdateError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -255,7 +288,7 @@ function generateModelOperations(models, customError) {
         ),
 
       deleteMany: (
-        args?: PrismaNamespace.Args<${delegate}, 'deleteMany'>
+        args?: ${argsType('deleteMany')}
       ): Effect.Effect<PrismaNamespace.BatchPayload, ${errorType('PrismaDeleteManyError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -265,7 +298,7 @@ function generateModelOperations(models, customError) {
         ),
 
       updateMany: (
-        args: PrismaNamespace.Args<${delegate}, 'updateMany'>
+        args: ${argsType('updateMany')}
       ): Effect.Effect<PrismaNamespace.BatchPayload, ${errorType('PrismaUpdateManyError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -274,8 +307,8 @@ function generateModelOperations(models, customError) {
           })
         ),
 
-      updateManyAndReturn: <A extends PrismaNamespace.Args<${delegate}, 'updateManyAndReturn'>>(
-        args: PrismaNamespace.Exact<A, PrismaNamespace.Args<${delegate}, 'updateManyAndReturn'>>
+      updateManyAndReturn: <A extends ${argsType('updateManyAndReturn')}>(
+        args: A
       ): Effect.Effect<${resultType('updateManyAndReturn')}, ${errorType('PrismaUpdateManyError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -284,8 +317,8 @@ function generateModelOperations(models, customError) {
           })
         ),
 
-      upsert: <A extends PrismaNamespace.Args<${delegate}, 'upsert'>>(
-        args: PrismaNamespace.Exact<A, PrismaNamespace.Args<${delegate}, 'upsert'>>
+      upsert: <A extends ${argsType('upsert')}>(
+        args: A
       ): Effect.Effect<${resultType('upsert')}, ${errorType('PrismaCreateError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -295,8 +328,8 @@ function generateModelOperations(models, customError) {
         ),
 
       // Aggregation operations
-      count: <A extends PrismaNamespace.Args<${delegate}, 'count'> = {}>(
-        args?: PrismaNamespace.Exact<A, PrismaNamespace.Args<${delegate}, 'count'>>
+      count: <A extends ${argsType('count')} = {}>(
+        args?: A
       ): Effect.Effect<${resultType('count')}, ${errorType('PrismaFindError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -305,8 +338,8 @@ function generateModelOperations(models, customError) {
           })
         ),
 
-      aggregate: <A extends PrismaNamespace.Args<${delegate}, 'aggregate'>>(
-        args: PrismaNamespace.Exact<A, PrismaNamespace.Args<${delegate}, 'aggregate'>>
+      aggregate: <A extends ${argsType('aggregate')}>(
+        args: A
       ): Effect.Effect<${resultType('aggregate')}, ${errorType('PrismaFindError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -315,8 +348,8 @@ function generateModelOperations(models, customError) {
           })
         ),
 
-      groupBy: <A extends PrismaNamespace.Args<${delegate}, 'groupBy'>>(
-        args: PrismaNamespace.Exact<A, PrismaNamespace.Args<${delegate}, 'groupBy'>>
+      groupBy: <A extends ${argsType('groupBy')}>(
+        args: A
       ): Effect.Effect<${resultType('groupBy')}, ${errorType('PrismaFindError')}, PrismaClient> =>
         Effect.flatMap(PrismaClient, ({ tx: client }) =>
           Effect.tryPromise({
@@ -341,23 +374,31 @@ function parseErrorImportPath(errorImportPath) {
 async function generateUnifiedService(models, outputDir, clientImportPath, errorImportPath) {
     const customError = parseErrorImportPath(errorImportPath);
     const rawSqlOperations = generateRawSqlOperations(customError);
+    const modelTypeAliases = generateModelTypeAliases(models);
     const modelOperations = generateModelOperations(models, customError);
     // Generate different content based on whether custom error is configured
     const serviceContent = customError
-        ? generateCustomErrorService(customError, clientImportPath, rawSqlOperations, modelOperations)
-        : generateDefaultErrorService(clientImportPath, rawSqlOperations, modelOperations);
+        ? generateCustomErrorService(customError, clientImportPath, rawSqlOperations, modelTypeAliases, modelOperations)
+        : generateDefaultErrorService(clientImportPath, rawSqlOperations, modelTypeAliases, modelOperations);
     await promises_1.default.writeFile(node_path_1.default.join(outputDir, "index.ts"), serviceContent);
 }
 /**
  * Generate service with custom user-provided error class.
  * All operations use a single error type and a simple mapError function.
  */
-function generateCustomErrorService(customError, clientImportPath, rawSqlOperations, modelOperations) {
+function generateCustomErrorService(customError, clientImportPath, rawSqlOperations, modelTypeAliases, modelOperations) {
     return `${header}
 import { Context, Effect, Exit, Layer } from "effect"
 import { Service } from "effect/Effect"
 import { Prisma as PrismaNamespace, PrismaClient as BasePrismaClient } from "${clientImportPath}"
 import { ${customError.className}, mapPrismaError } from "${customError.path}"
+
+// ============================================================================
+// Type aliases for model operations (performance optimization)
+// These are computed once and reused, reducing TypeScript's type-checking workload
+// ============================================================================
+
+${modelTypeAliases}
 
 // Symbol used to identify intentional rollbacks vs actual errors
 const ROLLBACK = Symbol.for("prisma.effect.rollback")
@@ -749,11 +790,18 @@ export const makePrismaLayerEffect = PrismaClient.layerEffect
  * Generate service with default tagged error classes.
  * Operations have per-operation error types for fine-grained error handling.
  */
-function generateDefaultErrorService(clientImportPath, rawSqlOperations, modelOperations) {
+function generateDefaultErrorService(clientImportPath, rawSqlOperations, modelTypeAliases, modelOperations) {
     return `${header}
 import { Context, Data, Effect, Exit, Layer } from "effect"
 import { Service } from "effect/Effect"
 import { Prisma as PrismaNamespace, PrismaClient as BasePrismaClient } from "${clientImportPath}"
+
+// ============================================================================
+// Type aliases for model operations (performance optimization)
+// These are computed once and reused, reducing TypeScript's type-checking workload
+// ============================================================================
+
+${modelTypeAliases}
 
 // Symbol used to identify intentional rollbacks vs actual errors
 const ROLLBACK = Symbol.for("prisma.effect.rollback")

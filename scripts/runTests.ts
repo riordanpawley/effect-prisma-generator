@@ -86,8 +86,11 @@ const runPrisma7Tests = Effect.gen(function* () {
     yield* runInDir("tests/prisma7", "npm", "install");
   }
 
-  // Push DB schema (also runs generate via schema.prisma config)
+  // Push DB schema
   yield* runInDir("tests/prisma7", "npm", "exec", "prisma", "db", "push");
+
+  // In Prisma 7 with prisma.config.ts, db push doesn't auto-run generators
+  yield* runInDir("tests/prisma7", "npm", "exec", "prisma", "generate");
 
   // Type check generated effect files with strictest settings (matching Chefy's tsconfig)
   yield* runInDir(
