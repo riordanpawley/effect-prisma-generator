@@ -28,8 +28,8 @@ Add the generator to your `schema.prisma` file:
 ```prisma
 // prisma/schema.prisma
 generator client {
-  provider        = "prisma-client-js"
-  output          = "./generated/client"
+  provider        = "prisma-client"
+  output          = "./generated"
 }
 
 generator effect {
@@ -41,7 +41,7 @@ generator effect {
 
 Then run `prisma generate` to generate the client and the Effect service.
 
-### Recommended
+### Recommendation (optional)
 
 Add the following to your `tsconfig.json`:
 
@@ -49,21 +49,23 @@ Add the following to your `tsconfig.json`:
 {
   "compilerOptions": {
     "paths": {
-      "@prisma/*": ["./prisma/generated/*"]
+      "~prisma/*": ["./prisma/generated/*"]
     }
   }
 }
 ```
 
-Then you can import the generated types like this:
+Then you can import the generated PrismaService (and PrismaClient) like this:
 
 ```typescript
-import { PrismaService } from "@prisma/effect";
+import { PrismaClient } from "~prisma/client";
+import { PrismaService } from "~prisma/effect";
 ```
 
 Otherwise, you can import the generated types like this (adjust the path accordingly):
 
 ```typescript
+import { PrismaClient } from "../../prisma/generated/client";
 import { PrismaService } from "../../prisma/generated/effect";
 ```
 
@@ -71,15 +73,11 @@ import { PrismaService } from "../../prisma/generated/effect";
 
 ### 1. Provide the Layer
 
-First, create the `LivePrismaLayer` and merge it with the
-`PrismaService.Default` layer in your application entry point or test setup.
+Initialize the `PrismaClient` and provide it to the `PrismaService.Default` layer as a `PrismaClientService`.
 
 ```typescript
 import { Effect, Layer } from "effect";
-import {
-  createPrismaClientLayer,
-  PrismaService,
-} from "./prisma/generated/effect";
+import { PrismaService, PrismaClientService } from "~prisma/effect";
 
 // ... in your program
 const prisma = new PrismaClient({ adapter });
@@ -120,7 +118,7 @@ const program = Effect.gen(function* () {
 
 ## API
 
-The generated `PrismaService` mirrors your Prisma Client API but returns `Effect<Success, Error, PrismaService>` instead of Promises, where `Error` is a specific union type based on the operation (e.g., `PrismaCreateError`, `PrismaUpdateError`, `PrismaFindError`).
+The generated `PrismaService` mirrors your Prisma Client API but returns `Effect<SpecificPrismaResultType, PrismaError, never>` instead of Promises, where `PrismaError` is a specific union type based on the operation (e.g., `PrismaCreateError`, `PrismaUpdateError`, `PrismaFindError`).
 
 ### Error Handling
 
