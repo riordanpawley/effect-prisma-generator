@@ -3,19 +3,20 @@ import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { Data, Effect, Layer } from "effect";
 import { PrismaClient } from "./prisma/generated/client";
 import {
-  createPrismaClientLayer,
+  PrismaClientService,
   PrismaService,
+  PrismaTransactionClientService,
   PrismaUniqueConstraintError,
 } from "./prisma/generated/effect";
 
 describe("Prisma Effect Generator", () => {
-  const prisma = new PrismaClient({
-    adapter: new PrismaBetterSqlite3({
-      url: "file:prisma/dev.db",
-    }),
-  });
-  const LivePrismaLayer = createPrismaClientLayer(prisma);
-  const MainLayer = Layer.merge(LivePrismaLayer, PrismaService.Default);
+  const url = "file:prisma/dev.db";
+  const adapter = new PrismaBetterSqlite3({ url });
+  const prisma = new PrismaClient({ adapter });
+  const MainLayer = Layer.provide(
+    PrismaService.Default,
+    Layer.succeed(PrismaClientService, prisma),
+  );
 
   it.effect("should create and find a user", () =>
     Effect.gen(function* () {
@@ -134,6 +135,22 @@ describe("Prisma Effect Generator", () => {
         where: { email: { in: [email, nestedEmail] } },
       });
       expect(found.length).toBe(0);
+    }).pipe(Effect.provide(MainLayer)),
+  );
+
+  it.effect("should have a PrismaTransactionClientService in transactions", () =>
+    Effect.gen(function* () {
+      const prisma = yield* PrismaService;
+
+      yield* prisma.$transaction(Effect.gen(function* () {
+        // Should have a transaction client service inside the transaction
+        const tx = yield* Effect.serviceOption(PrismaTransactionClientService);
+        expect(tx._tag).toBe("Some");
+      }));
+
+      // No transaction client service outside of transaction
+      const tx = yield* Effect.serviceOption(PrismaTransactionClientService);
+      expect(tx._tag).toBe("None");
     }).pipe(Effect.provide(MainLayer)),
   );
 

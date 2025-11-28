@@ -43,35 +43,35 @@ generatorHandler({
 function generateRawSqlOperations() {
   return `
     $executeRaw: (args: Prisma.Sql | [Prisma.Sql, ...any[]]) =>
-      Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+      Effect.flatMap(clientOrTx(client), client =>
         Effect.tryPromise({
           try: () => (Array.isArray(args) ? client.$executeRaw(args[0], ...args.slice(1)) : client.$executeRaw(args)),
           catch: (error) => mapError(error, "$executeRaw", "Prisma")
-        })
+        }),
       ),
 
     $executeRawUnsafe: (query: string, ...values: any[]) =>
-      Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+      Effect.flatMap(clientOrTx(client), client =>
         Effect.tryPromise({
           try: () => client.$executeRawUnsafe(query, ...values),
           catch: (error) => mapError(error, "$executeRawUnsafe", "Prisma")
-        })
+        }),
       ),
 
     $queryRaw: (args: Prisma.Sql | [Prisma.Sql, ...any[]]) =>
-      Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+      Effect.flatMap(clientOrTx(client), client =>
         Effect.tryPromise({
           try: () => (Array.isArray(args) ? client.$queryRaw(args[0], ...args.slice(1)) : client.$queryRaw(args)),
           catch: (error) => mapError(error, "$queryRaw", "Prisma")
-        })
+        }),
       ),
 
     $queryRawUnsafe: (query: string, ...values: any[]) =>
-      Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+      Effect.flatMap(clientOrTx(client), client =>
         Effect.tryPromise({
           try: () => client.$queryRawUnsafe(query, ...values),
           catch: (error) => mapError(error, "$queryRawUnsafe", "Prisma")
-        })
+        }),
       ),`;
 }
 
@@ -83,141 +83,141 @@ function generateModelOperations(models: DMMF.Model[]) {
 
       return `    ${modelNameCamel}: {
       findUnique: <T extends Prisma.${modelName}FindUniqueArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}FindUniqueArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.findUnique(args),
             catch: (error) => mapFindError(error, "findUnique", "${modelName}")
-          })
+          }),
         ),
 
       findUniqueOrThrow: <T extends Prisma.${modelName}FindUniqueOrThrowArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}FindUniqueOrThrowArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.findUniqueOrThrow(args),
             catch: (error) => mapFindOrThrowError(error, "findUniqueOrThrow", "${modelName}")
-          })
+          }),
         ),
 
       findFirst: <T extends Prisma.${modelName}FindFirstArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}FindFirstArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.findFirst(args),
             catch: (error) => mapFindError(error, "findFirst", "${modelName}")
-          })
+          }),
         ),
 
       findFirstOrThrow: <T extends Prisma.${modelName}FindFirstOrThrowArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}FindFirstOrThrowArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.findFirstOrThrow(args),
             catch: (error) => mapFindOrThrowError(error, "findFirstOrThrow", "${modelName}")
-          })
+          }),
         ),
 
       findMany: <T extends Prisma.${modelName}FindManyArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}FindManyArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.findMany(args),
             catch: (error) => mapFindError(error, "findMany", "${modelName}")
-          })
+          }),
         ),
 
       create: <T extends Prisma.${modelName}CreateArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}CreateArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.create(args),
             catch: (error) => mapCreateError(error, "create", "${modelName}")
-          })
+          }),
         ),
 
       createMany: <T extends Prisma.${modelName}CreateManyArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}CreateManyArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.createMany(args),
             catch: (error) => mapCreateError(error, "createMany", "${modelName}")
-          })
+          }),
         ),
 
       createManyAndReturn: <T extends Prisma.${modelName}CreateManyAndReturnArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}CreateManyAndReturnArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.createManyAndReturn(args),
             catch: (error) => mapCreateError(error, "createManyAndReturn", "${modelName}")
-          })
+          }),
         ),
 
       delete: <T extends Prisma.${modelName}DeleteArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}DeleteArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.delete(args),
             catch: (error) => mapDeleteError(error, "delete", "${modelName}")
-          })
+          }),
         ),
 
       update: <T extends Prisma.${modelName}UpdateArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}UpdateArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.update(args),
             catch: (error) => mapUpdateError(error, "update", "${modelName}")
-          })
+          }),
         ),
 
       deleteMany: <T extends Prisma.${modelName}DeleteManyArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}DeleteManyArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.deleteMany(args),
             catch: (error) => mapDeleteManyError(error, "deleteMany", "${modelName}")
-          })
+          }),
         ),
 
       updateMany: <T extends Prisma.${modelName}UpdateManyArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}UpdateManyArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.updateMany(args),
             catch: (error) => mapUpdateManyError(error, "updateMany", "${modelName}")
-          })
+          }),
         ),
 
       updateManyAndReturn: <T extends Prisma.${modelName}UpdateManyAndReturnArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}UpdateManyAndReturnArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.updateManyAndReturn(args),
             catch: (error) => mapUpdateManyError(error, "updateManyAndReturn", "${modelName}")
-          })
+          }),
         ),
 
       upsert: <T extends Prisma.${modelName}UpsertArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}UpsertArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.upsert(args),
             catch: (error) => mapCreateError(error, "upsert", "${modelName}")
-          })
+          }),
         ),
 
       // Aggregation operations
       count: <T extends Prisma.${modelName}CountArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}CountArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.count(args),
             catch: (error) => mapFindError(error, "count", "${modelName}")
-          })
+          }),
         ),
 
       aggregate: <T extends Prisma.${modelName}AggregateArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}AggregateArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.aggregate(args),
             catch: (error) => mapFindError(error, "aggregate", "${modelName}")
-          })
+          }),
         ),
 
       groupBy: <T extends Prisma.${modelName}GroupByArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}GroupByArgs>) =>
-        Effect.flatMap(PrismaClientService, ({ tx: client }) =>
+        Effect.flatMap(clientOrTx(client), client =>
           Effect.tryPromise({
             try: () => client.${modelNameCamel}.groupBy(args as any),
             catch: (error) => mapFindError(error, "groupBy", "${modelName}")
-          })
-        )
+          }),
+        ),
     }`;
     })
     .join(",\n\n");
@@ -232,29 +232,19 @@ async function generateUnifiedService(
   const modelOperations = generateModelOperations(models);
 
   const serviceContent = `${header}
-import { Cause, Context, Data, Effect, Exit, Layer, Runtime } from "effect"
+import { Cause, Context, Data, Effect, Exit, Option, Runtime } from "effect"
 import { Service } from "effect/Effect"
 import { Prisma, PrismaClient } from "${clientImportPath}"
 
 export class PrismaClientService extends Context.Tag("PrismaClientService")<
   PrismaClientService,
-  {
-    tx: PrismaClient | Prisma.TransactionClient
-    client: PrismaClient
-  }
+  PrismaClient
 >() {}
 
-export const createPrismaClientLayer = (client: PrismaClient) => Layer.effect(
-  PrismaClientService,
-  Effect.sync(() => {
-    return {
-      // The \`tx\` property (transaction) can be shared and overridden,
-      // but the \`client\` property must always be a PrismaClient instance.
-      tx: client,
-      client: client
-    }
-  })
-)
+export class PrismaTransactionClientService extends Context.Tag("PrismaTransactionClientService")<
+  PrismaTransactionClientService,
+  Prisma.TransactionClient
+>() {}
 
 export class PrismaUniqueConstraintError extends Data.TaggedError("PrismaUniqueConstraintError")<{
   cause: Prisma.PrismaClientKnownRequestError
@@ -599,10 +589,16 @@ const mapUpdateManyError = (error: unknown, operation: string, model: string): P
   throw error;
 }
 
+const clientOrTx = (client: PrismaClient) => Effect.map(
+  Effect.serviceOption(PrismaTransactionClientService),
+  Option.getOrElse(() => client),
+);
+
 export class PrismaService extends Service<PrismaService>()("PrismaService", {
   effect: Effect.gen(function* () {
+    const client = yield* PrismaClientService;
     return {
-      $transaction: <R, E, A>(
+      $transaction: <A, E, R>(
         effect: Effect.Effect<A, E, R>,
         options?: {
           maxWait?: number
@@ -610,23 +606,16 @@ export class PrismaService extends Service<PrismaService>()("PrismaService", {
           isolationLevel?: Prisma.TransactionIsolationLevel
         }
       ) =>
-        Effect.flatMap(
-          Effect.all([PrismaClientService, Effect.runtime<R>()]),
-          ([{ client, tx }, runtime]): Effect.Effect<A, E | PrismaError, R> => {
-            const isRootClient = "$transaction" in tx;
-            if (!isRootClient) {
-              return effect
-            }
-            return Effect.tryPromise({
+        Effect.gen(function* () {
+          const runtime = yield* Effect.runtime<R>();
+          const tx = yield* Effect.serviceOption(PrismaTransactionClientService);
+          return yield* Option.match(tx, {
+            onSome: (tx) => effect,
+            onNone: () =>  Effect.tryPromise({
               try: () =>
                 client.$transaction(async (tx) => {
                   const exit = await Runtime.runPromiseExit(runtime)(
-                    effect.pipe(
-                      Effect.provideService(PrismaClientService, {
-                        tx,
-                        client,
-                      }),
-                    ) as Effect.Effect<A, E, R>,
+                    effect.pipe(Effect.provideService(PrismaTransactionClientService, tx)) as Effect.Effect<A, E, R>,
                   )
                   if (Exit.isSuccess(exit)) {
                     return exit.value
@@ -634,9 +623,9 @@ export class PrismaService extends Service<PrismaService>()("PrismaService", {
                   throw Cause.squash(exit.cause)
                 }, options),
               catch: (error) => error as E,
-            }) as unknown as Effect.Effect<A, E, R>;
-          }
-        ),
+            }) as unknown as Effect.Effect<A, E, R>,
+          })
+        }),
       ${rawSqlOperations}
 
       ${modelOperations}
