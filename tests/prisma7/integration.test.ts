@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "@effect/vitest";
-import { Data, Effect, Layer } from "effect";
+import { Data, Effect, Layer, pipe } from "effect";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 import {
   Prisma,
@@ -2021,6 +2021,89 @@ describe("Prisma 7 Effect Generator", () => {
         yield* prisma.user.deleteMany({
           where: { email: { startsWith: prefix } },
         });
+      }).pipe(Effect.provide(MainLayer)),
+    );
+
+    it.effect("should support $transactionWith with custom options", () =>
+      Effect.gen(function* () {
+        const prisma = yield* Prisma;
+        const email = `tx-with-options-${Date.now()}@example.com`;
+
+        // Use $transactionWith with custom timeout and maxWait
+        // Note: SQLite doesn't support isolation levels, so we test timeout/maxWait instead
+        const result = yield* prisma.$transactionWith(
+          Effect.gen(function* () {
+            const user = yield* prisma.user.create({
+              data: { email, name: "TX With Options" },
+            });
+            yield* prisma.post.create({
+              data: { title: "TX Post With Options", authorId: user.id },
+            });
+            return user;
+          }),
+          { timeout: 10000, maxWait: 5000 }
+        );
+
+        // Verify both were created
+        const user = yield* prisma.user.findUnique({
+          where: { id: result.id },
+          include: { posts: true },
+        });
+        expect(user?.posts).toHaveLength(1);
+
+        // Cleanup
+        yield* prisma.post.deleteMany({ where: { authorId: result.id } });
+        yield* prisma.user.delete({ where: { id: result.id } });
+      }).pipe(Effect.provide(MainLayer)),
+    );
+
+    it.effect("should support $isolatedTransactionWith with custom options", () =>
+      Effect.gen(function* () {
+        const prisma = yield* Prisma;
+        const email = `tx-isolated-with-${Date.now()}@example.com`;
+
+        // Simple test: just verify $isolatedTransactionWith accepts options and works
+        // Note: SQLite doesn't support isolation levels, so we test timeout/maxWait instead
+        const result = yield* prisma.$isolatedTransactionWith(
+          Effect.gen(function* () {
+            const user = yield* prisma.user.create({
+              data: { email, name: "Isolated With Options" },
+            });
+            return user;
+          }),
+          { timeout: 10000, maxWait: 5000 }
+        );
+
+        expect(result.email).toBe(email);
+
+        // Cleanup
+        yield* prisma.user.delete({ where: { id: result.id } });
+      }).pipe(Effect.provide(MainLayer)),
+    );
+
+    it.effect("should enable point-free programming style", () =>
+      Effect.gen(function* () {
+        const prisma = yield* Prisma;
+        const email = `tx-point-free-${Date.now()}@example.com`;
+
+        // Define reusable transaction boundary
+        const withTransaction = prisma.$transaction;
+
+        // Create effect to run in transaction
+        const createUserEffect = Effect.gen(function* () {
+          const user = yield* prisma.user.create({
+            data: { email, name: "Point Free User" },
+          });
+          return user;
+        });
+
+        // Use point-free style with pipe
+        const result = yield* pipe(createUserEffect, withTransaction);
+
+        expect(result.email).toBe(email);
+
+        // Cleanup
+        yield* prisma.user.delete({ where: { id: result.id } });
       }).pipe(Effect.provide(MainLayer)),
     );
   });

@@ -642,7 +642,8 @@ export class Prisma extends Service<Prisma>()("Prisma", {
        * This implementation uses a callback-free transaction pattern that keeps the effect
        * running in the same fiber as the parent, preserving Ref, FiberRef, and Context access.
        *
-       * Options passed here override any defaults set via TransactionConfig layer.
+       * Uses default transaction options from PrismaClient constructor.
+       * For custom options, use \`$transactionWith\`.
        *
        * @example
        * const result = yield* prisma.$transaction(
@@ -652,16 +653,63 @@ export class Prisma extends Service<Prisma>()("Prisma", {
        *     return user
        *   })
        * )
+       */
+      $transaction: <R, E, A>(
+        effect: Effect.Effect<A, E, R>
+      ) =>
+        Effect.flatMap(
+          PrismaClient,
+          ({ client, tx }): Effect.Effect<A, E | ${customError.className}, R> => {
+            // If we're already in a transaction, just run the effect directly (no nesting)
+            const isRootClient = "$transaction" in tx
+            if (!isRootClient) {
+              return effect
+            }
+
+            // Use acquireUseRelease to manage the transaction lifecycle
+            // This keeps everything in the same fiber, preserving Ref/FiberRef/Context
+            return Effect.acquireUseRelease(
+              // Acquire: begin a new transaction with default options
+              $begin(client),
+
+              // Use: run the effect with the transaction client injected
+              (txClient) =>
+                effect.pipe(
+                  Effect.provideService(PrismaClient, { tx: txClient, client })
+                ),
+
+              // Release: commit on success, rollback on failure/interruption
+              (txClient, exit) =>
+                Exit.isSuccess(exit)
+                  ? Effect.promise(() => txClient.$commit())
+                  : Effect.promise(() => txClient.$rollback())
+            )
+          }
+        ),
+
+      /**
+       * Execute an effect within a database transaction with custom options.
+       * All operations within the effect will be atomic - they either all succeed or all fail.
+       *
+       * This implementation uses a callback-free transaction pattern that keeps the effect
+       * running in the same fiber as the parent, preserving Ref, FiberRef, and Context access.
+       *
+       * Options passed here override any defaults set in PrismaClient constructor.
        *
        * @example
        * // Override default isolation level for this transaction
-       * const result = yield* prisma.$transaction(myEffect, {
-       *   isolationLevel: "ReadCommitted"
-       * })
+       * const result = yield* prisma.$transactionWith(
+       *   Effect.gen(function* () {
+       *     const user = yield* prisma.user.create({ data: { name: "Alice" } })
+       *     yield* prisma.post.create({ data: { title: "Hello", authorId: user.id } })
+       *     return user
+       *   }),
+       *   { isolationLevel: "ReadCommitted", timeout: 10000 }
+       * )
        */
-      $transaction: <R, E, A>(
+      $transactionWith: <R, E, A>(
         effect: Effect.Effect<A, E, R>,
-        options?: TransactionOptions
+        options: TransactionOptions
       ) =>
         Effect.flatMap(
           PrismaClient,
@@ -706,6 +754,9 @@ export class Prisma extends Service<Prisma>()("Prisma", {
        * ⚠️ WARNING: The isolated transaction can commit while the parent rolls back,
        * or vice versa. Use carefully to avoid data inconsistencies.
        *
+       * Uses default transaction options from PrismaClient constructor.
+       * For custom options, use \`$isolatedTransactionWith\`.
+       *
        * @example
        * yield* prisma.$transaction(
        *   Effect.gen(function* () {
@@ -719,8 +770,56 @@ export class Prisma extends Service<Prisma>()("Prisma", {
        * )
        */
       $isolatedTransaction: <R, E, A>(
+        effect: Effect.Effect<A, E, R>
+      ) =>
+        Effect.flatMap(
+          PrismaClient,
+          ({ client }): Effect.Effect<A, E | ${customError.className}, R> => {
+            // Always use the root client to create a fresh transaction
+            return Effect.acquireUseRelease(
+              $begin(client),
+              (txClient) =>
+                effect.pipe(
+                  Effect.provideService(PrismaClient, { tx: txClient, client })
+                ),
+              (txClient, exit) =>
+                Exit.isSuccess(exit)
+                  ? Effect.promise(() => txClient.$commit())
+                  : Effect.promise(() => txClient.$rollback())
+            )
+          }
+        ),
+
+      /**
+       * Execute an effect in a NEW transaction with custom options, even if already inside a transaction.
+       * Unlike \`$transaction\`, this always creates a fresh, independent transaction.
+       *
+       * Use this for operations that should NOT be rolled back with the parent:
+       * - Audit logging that must persist even if main operation fails
+       * - Saga pattern where each step has independent commit/rollback
+       * - Background job queuing that should commit immediately
+       *
+       * ⚠️ WARNING: The isolated transaction can commit while the parent rolls back,
+       * or vice versa. Use carefully to avoid data inconsistencies.
+       *
+       * Options passed here override any defaults set in PrismaClient constructor.
+       *
+       * @example
+       * yield* prisma.$transaction(
+       *   Effect.gen(function* () {
+       *     // This audit log commits independently with custom isolation level
+       *     yield* prisma.$isolatedTransactionWith(
+       *       prisma.auditLog.create({ data: { action: "attempt", userId } }),
+       *       { isolationLevel: "Serializable" }
+       *     )
+       *     // Main operation - if this fails, audit log is still committed
+       *     yield* prisma.user.delete({ where: { id: userId } })
+       *   })
+       * )
+       */
+      $isolatedTransactionWith: <R, E, A>(
         effect: Effect.Effect<A, E, R>,
-        options?: TransactionOptions
+        options: TransactionOptions
       ) =>
         Effect.flatMap(
           PrismaClient,
@@ -1388,7 +1487,8 @@ export class Prisma extends Service<Prisma>()("Prisma", {
        * This implementation uses a callback-free transaction pattern that keeps the effect
        * running in the same fiber as the parent, preserving Ref, FiberRef, and Context access.
        *
-       * Options passed here override any defaults set via transactionOptions in the layer.
+       * Uses default transaction options from PrismaClient constructor.
+       * For custom options, use \`$transactionWith\`.
        *
        * @example
        * const result = yield* prisma.$transaction(
@@ -1398,16 +1498,63 @@ export class Prisma extends Service<Prisma>()("Prisma", {
        *     return user
        *   })
        * )
+       */
+      $transaction: <R, E, A>(
+        effect: Effect.Effect<A, E, R>
+      ) =>
+        Effect.flatMap(
+          PrismaClient,
+          ({ client, tx }): Effect.Effect<A, E | PrismaError, R> => {
+            // If we're already in a transaction, just run the effect directly (no nesting)
+            const isRootClient = "$transaction" in tx
+            if (!isRootClient) {
+              return effect
+            }
+
+            // Use acquireUseRelease to manage the transaction lifecycle
+            // This keeps everything in the same fiber, preserving Ref/FiberRef/Context
+            return Effect.acquireUseRelease(
+              // Acquire: begin a new transaction with default options
+              $begin(client),
+
+              // Use: run the effect with the transaction client injected
+              (txClient) =>
+                effect.pipe(
+                  Effect.provideService(PrismaClient, { tx: txClient, client })
+                ),
+
+              // Release: commit on success, rollback on failure/interruption
+              (txClient, exit) =>
+                Exit.isSuccess(exit)
+                  ? Effect.promise(() => txClient.$commit())
+                  : Effect.promise(() => txClient.$rollback())
+            )
+          }
+        ),
+
+      /**
+       * Execute an effect within a database transaction with custom options.
+       * All operations within the effect will be atomic - they either all succeed or all fail.
+       *
+       * This implementation uses a callback-free transaction pattern that keeps the effect
+       * running in the same fiber as the parent, preserving Ref, FiberRef, and Context access.
+       *
+       * Options passed here override any defaults set in PrismaClient constructor.
        *
        * @example
        * // Override default isolation level for this transaction
-       * const result = yield* prisma.$transaction(myEffect, {
-       *   isolationLevel: "ReadCommitted"
-       * })
+       * const result = yield* prisma.$transactionWith(
+       *   Effect.gen(function* () {
+       *     const user = yield* prisma.user.create({ data: { name: "Alice" } })
+       *     yield* prisma.post.create({ data: { title: "Hello", authorId: user.id } })
+       *     return user
+       *   }),
+       *   { isolationLevel: "ReadCommitted", timeout: 10000 }
+       * )
        */
-      $transaction: <R, E, A>(
+      $transactionWith: <R, E, A>(
         effect: Effect.Effect<A, E, R>,
-        options?: TransactionOptions
+        options: TransactionOptions
       ) =>
         Effect.flatMap(
           PrismaClient,
@@ -1452,6 +1599,9 @@ export class Prisma extends Service<Prisma>()("Prisma", {
        * ⚠️ WARNING: The isolated transaction can commit while the parent rolls back,
        * or vice versa. Use carefully to avoid data inconsistencies.
        *
+       * Uses default transaction options from PrismaClient constructor.
+       * For custom options, use \`$isolatedTransactionWith\`.
+       *
        * @example
        * yield* prisma.$transaction(
        *   Effect.gen(function* () {
@@ -1465,8 +1615,56 @@ export class Prisma extends Service<Prisma>()("Prisma", {
        * )
        */
       $isolatedTransaction: <R, E, A>(
+        effect: Effect.Effect<A, E, R>
+      ) =>
+        Effect.flatMap(
+          PrismaClient,
+          ({ client }): Effect.Effect<A, E | PrismaError, R> => {
+            // Always use the root client to create a fresh transaction
+            return Effect.acquireUseRelease(
+              $begin(client),
+              (txClient) =>
+                effect.pipe(
+                  Effect.provideService(PrismaClient, { tx: txClient, client })
+                ),
+              (txClient, exit) =>
+                Exit.isSuccess(exit)
+                  ? Effect.promise(() => txClient.$commit())
+                  : Effect.promise(() => txClient.$rollback())
+            )
+          }
+        ),
+
+      /**
+       * Execute an effect in a NEW transaction with custom options, even if already inside a transaction.
+       * Unlike \`$transaction\`, this always creates a fresh, independent transaction.
+       *
+       * Use this for operations that should NOT be rolled back with the parent:
+       * - Audit logging that must persist even if main operation fails
+       * - Saga pattern where each step has independent commit/rollback
+       * - Background job queuing that should commit immediately
+       *
+       * ⚠️ WARNING: The isolated transaction can commit while the parent rolls back,
+       * or vice versa. Use carefully to avoid data inconsistencies.
+       *
+       * Options passed here override any defaults set in PrismaClient constructor.
+       *
+       * @example
+       * yield* prisma.$transaction(
+       *   Effect.gen(function* () {
+       *     // This audit log commits independently with custom isolation level
+       *     yield* prisma.$isolatedTransactionWith(
+       *       prisma.auditLog.create({ data: { action: "attempt", userId } }),
+       *       { isolationLevel: "Serializable" }
+       *     )
+       *     // Main operation - if this fails, audit log is still committed
+       *     yield* prisma.user.delete({ where: { id: userId } })
+       *   })
+       * )
+       */
+      $isolatedTransactionWith: <R, E, A>(
         effect: Effect.Effect<A, E, R>,
-        options?: TransactionOptions
+        options: TransactionOptions
       ) =>
         Effect.flatMap(
           PrismaClient,

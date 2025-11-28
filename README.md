@@ -343,6 +343,46 @@ const program = Effect.gen(function* () {
 });
 ```
 
+#### Custom Transaction Options
+
+For transactions that need custom options (isolation level, timeout, etc.), use `$transactionWith`:
+
+```typescript
+// Custom isolation level
+yield* prisma.$transactionWith(
+  Effect.gen(function* () {
+    const user = yield* prisma.user.create({ data: { name: "Alice" } });
+    return user;
+  }),
+  { isolationLevel: "Serializable", timeout: 10000 }
+);
+
+// Point-free style for cleaner composition
+import { pipe } from "effect";
+
+const myEffect = Effect.gen(function* () {
+  const prisma = yield* Prisma;
+  return yield* prisma.user.findMany();
+});
+
+// Clean, functional composition!
+pipe(
+  myEffect,
+  prisma.$transaction  // No options? Use $transaction directly!
+);
+
+// With options, use $transactionWith
+const withSerializable = (eff: Effect.Effect<any, any, any>) =>
+  prisma.$transactionWith(eff, { isolationLevel: "Serializable" });
+
+pipe(myEffect, withSerializable);
+```
+
+Available transaction options:
+- `isolationLevel`: `"ReadUncommitted" | "ReadCommitted" | "RepeatableRead" | "Serializable"`
+- `maxWait`: Maximum time (ms) Prisma Client will wait to acquire a transaction
+- `timeout`: Maximum time (ms) the transaction can run before being canceled
+
 #### Transaction Rollback Behavior
 
 **Any uncaught error in the Effect error channel triggers a rollback:**
