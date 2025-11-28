@@ -1,6 +1,6 @@
-node_modules
-dist
+node_modules/
+dist/
+generated/
+dev.db
 .DS_Store
 *.tsbuildinfo
-tests/generated
-*.db

@@ -9,7 +9,7 @@ generator client {
 }
 
 generator effect {
-  provider         = "node ./dist/index.js"
+  provider         = "node ../dist/index.js"
   output           = "./generated/effect"
   clientImportPath = "../client"
 }

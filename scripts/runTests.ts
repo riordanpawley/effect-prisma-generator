@@ -6,6 +6,7 @@ const run = (cmd: string, ...args: string[]) =>
   Effect.gen(function* () {
     yield* Console.log(cmd, ...args);
     const exitCode = yield* Command.make(cmd, ...args).pipe(
+      Command.workingDirectory("tests"),
       Command.stdout("inherit"),
       Command.stderr("inherit"),
       Command.exitCode,
@@ -26,18 +27,18 @@ const program = Effect.gen(function* () {
     yield* run("npm", "run", "build");
   }
   if (clean) {
-    yield* run("tsc", "--noEmit", "--project", "tsconfig.test.json");
+    yield* run("tsc", "--noEmit");
   }
-  const dbExists = yield* fs.exists("tests/dev.db");
+  const dbExists = yield* fs.exists("dev.db");
   if (clean || !dbExists) {
-    yield* run("prisma", "db", "push", "--schema=tests/schema.prisma");
+    yield* run("prisma", "db", "push");
   }
   yield* run("vitest", "run");
 }).pipe(
   Effect.ensuring(
     process.argv.includes("--keep-db")
       ? Effect.void
-      : Effect.ignore(run("rm", "-r", "tests/dev.db")),
+      : Effect.ignore(run("rm", "-r", "prisma/dev.db")),
   ),
 );
 
