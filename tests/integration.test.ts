@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { Data, Effect, Layer } from "effect";
 import { PrismaClient } from "./prisma/generated/client";
 import {

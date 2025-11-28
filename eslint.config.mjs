@@ -1,6 +1,7 @@
 // @ts-check
 
 import eslint from "@eslint/js";
+import eslintConfigPrettier from "eslint-config-prettier/flat";
 import { defineConfig, globalIgnores } from "eslint/config";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -16,6 +17,7 @@ const gitignorePatterns = gitignoreContent
 
 export default defineConfig(
   globalIgnores(gitignorePatterns),
+  eslintConfigPrettier,
   eslint.configs.recommended,
   tseslint.configs.strict,
   {

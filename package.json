@@ -13,6 +13,7 @@
   "scripts": {
     "build": "tsc && chmod +x dist/index.js",
     "test": "tsx scripts/runTests.ts",
+    "format": "prettier --write . && eslint . --fix",
     "prepublishOnly": "npm run build"
   },
   "repository": {
@@ -39,6 +40,8 @@
     "@types/node": "^24.10.1",
     "effect": "^3.19.8",
     "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "3.7.1",
     "prisma": "^7.0.1",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",

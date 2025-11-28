@@ -85,7 +85,7 @@ import {
 const LivePrismaLayer = createPrismaClientLayer(new PrismaClient());
 const MainLayer = Layer.mergeAll(
   LivePrismaLayer,
-  PrismaService.Default
+  PrismaService.Default,
   // ... other layers
 );
 ```
@@ -150,7 +150,7 @@ All errors carry the following context:
 {
   cause: Prisma.PrismaClientKnownRequestError;
   operation: string; // e.g. "create", "findUnique"
-  model: string;     // e.g. "User", "Post"
+  model: string; // e.g. "User", "Post"
 }
 ```
 
@@ -163,13 +163,15 @@ import { Effect } from "effect";
 const program = Effect.gen(function* () {
   const prisma = yield* PrismaService;
 
-  yield* prisma.user.create({
-    data: { email: "test@example.com", name: "Test" }
-  }).pipe(
-    Effect.catchTag("PrismaUniqueConstraintError", (error) =>
-      Effect.logError(`User with email already exists: ${error.model}`)
-    )
-  );
+  yield* prisma.user
+    .create({
+      data: { email: "test@example.com", name: "Test" },
+    })
+    .pipe(
+      Effect.catchTag("PrismaUniqueConstraintError", (error) =>
+        Effect.logError(`User with email already exists: ${error.model}`),
+      ),
+    );
 });
 ```
 
