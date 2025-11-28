@@ -29,7 +29,8 @@ const program = Effect.gen(function* () {
   if (clean) {
     yield* run("tsc", "--noEmit");
   }
-  const dbExists = yield* fs.exists("dev.db");
+  yield* run("prisma", "generate");
+  const dbExists = yield* fs.exists("prisma/dev.db");
   if (clean || !dbExists) {
     yield* run("prisma", "db", "push");
   }

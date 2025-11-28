@@ -1,6 +1,6 @@
-node_modules/
 dist/
-generated/
-dev.db
+**/node_modules/
+**/generated/
+**/dev.db
 .DS_Store
 *.tsbuildinfo

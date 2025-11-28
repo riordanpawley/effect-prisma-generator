@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { Data, Effect, Layer } from "effect";
 import { PrismaClient } from "./prisma/generated/client";
 import {
@@ -8,7 +9,12 @@ import {
 } from "./prisma/generated/effect";
 
 describe("Prisma Effect Generator", () => {
-  const LivePrismaLayer = createPrismaClientLayer(new PrismaClient());
+  const prisma = new PrismaClient({
+    adapter: new PrismaBetterSqlite3({
+      url: "file:prisma/dev.db",
+    }),
+  });
+  const LivePrismaLayer = createPrismaClientLayer(prisma);
   const MainLayer = Layer.merge(LivePrismaLayer, PrismaService.Default);
 
   it.effect("should create and find a user", () =>

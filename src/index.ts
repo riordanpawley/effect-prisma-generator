@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-import { DMMF } from "@prisma/client/runtime/library";
 import type { GeneratorOptions } from "@prisma/generator";
-import { generatorHandler } from "@prisma/generator-helper";
+import { DMMF, generatorHandler } from "@prisma/generator-helper";
 import fs from "node:fs/promises";
 import path from "node:path";
 
