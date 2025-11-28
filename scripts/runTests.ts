@@ -10,9 +10,11 @@ const run = (cwd: string, cmd: string, ...args: string[]) =>
       Command.stdout("inherit"),
       Command.stderr("inherit"),
       Command.exitCode,
-      Effect.map(exitCode => {
+      Effect.map((exitCode) => {
         if (exitCode !== 0) {
-          return Effect.fail(new Error(`Command failed with exit code ${exitCode}`));
+          return Effect.fail(
+            new Error(`Command failed with exit code ${exitCode}`),
+          );
         }
         return exitCode;
       }),
@@ -35,6 +37,7 @@ const program = Effect.gen(function* () {
   if (clean || !dbExists) {
     yield* run("./tests", "prisma", "db", "push");
   }
+  yield* run("./tests", "tsc", "--noEmit");
   yield* run("./tests", "vitest", "run");
 }).pipe(
   Effect.ensuring(
