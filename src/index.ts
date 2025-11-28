@@ -215,10 +215,69 @@ function generateModelOperations(models: DMMF.Model[]) {
           }),
         ),
 
-      groupBy: <T extends Prisma.${modelName}GroupByArgs>(args: Prisma.SelectSubset<T, Prisma.${modelName}GroupByArgs>) =>
+      groupBy: <
+        T extends Prisma.${modelName}GroupByArgs,
+        HasSelectOrTake extends Prisma.Or<
+          Prisma.Extends<'skip', Prisma.Keys<T>>,
+          Prisma.Extends<'take', Prisma.Keys<T>>
+        >,
+        OrderByArg extends Prisma.True extends HasSelectOrTake
+          ? { orderBy: Prisma.${modelName}GroupByArgs['orderBy'] }
+          : { orderBy?: Prisma.${modelName}GroupByArgs['orderBy'] },
+        OrderFields extends Prisma.ExcludeUnderscoreKeys<Prisma.Keys<Prisma.MaybeTupleToUnion<T['orderBy']>>>,
+        ByFields extends Prisma.MaybeTupleToUnion<T['by']>,
+        ByValid extends Prisma.Has<ByFields, OrderFields>,
+        HavingFields extends Prisma.GetHavingFields<T['having']>,
+        HavingValid extends Prisma.Has<ByFields, HavingFields>,
+        ByEmpty extends T['by'] extends never[] ? Prisma.True : Prisma.False,
+        InputErrors extends ByEmpty extends Prisma.True
+        ? \`Error: "by" must not be empty.\`
+        : HavingValid extends Prisma.False
+        ? {
+            [P in HavingFields]: P extends ByFields
+              ? never
+              : P extends string
+              ? \`Error: Field "\${P}" used in "having" needs to be provided in "by".\`
+              : [
+                  Error,
+                  'Field ',
+                  P,
+                  \` in "having" needs to be provided in "by"\`,
+                ]
+          }[HavingFields]
+        : 'take' extends Prisma.Keys<T>
+        ? 'orderBy' extends Prisma.Keys<T>
+          ? ByValid extends Prisma.True
+            ? {}
+            : {
+                [P in OrderFields]: P extends ByFields
+                  ? never
+                  : \`Error: Field "\${P}" in "orderBy" needs to be provided in "by"\`
+              }[OrderFields]
+          : 'Error: If you provide "take", you also need to provide "orderBy"'
+        : 'skip' extends Prisma.Keys<T>
+        ? 'orderBy' extends Prisma.Keys<T>
+          ? ByValid extends Prisma.True
+            ? {}
+            : {
+                [P in OrderFields]: P extends ByFields
+                  ? never
+                  : \`Error: Field "\${P}" in "orderBy" needs to be provided in "by"\`
+              }[OrderFields]
+          : 'Error: If you provide "skip", you also need to provide "orderBy"'
+        : ByValid extends Prisma.True
+        ? {}
+        : {
+            [P in OrderFields]: P extends ByFields
+              ? never
+              : \`Error: Field "\${P}" in "orderBy" needs to be provided in "by"\`
+          }[OrderFields]
+      >(args: Prisma.SubsetIntersection<T, Prisma.${modelName}GroupByArgs, OrderByArg> & InputErrors) =>
         Effect.flatMap(clientOrTx(client), client =>
+          // @ts-ignore - Gives the error \`Error: "by" must not be empty.\`, but if this is actually the case, this will still show up at the caller.
           Effect.tryPromise({
-            try: () => client.${modelNameCamel}.groupBy(args as any),
+            // @ts-ignore - Also gives an error. But if this is actually the case, this will still show up at the caller.
+            try: () => client.${modelNameCamel}.groupBy(args),
             catch: (error) => mapFindError(error, "groupBy", "${modelName}")
           }),
         ),

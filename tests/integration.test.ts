@@ -68,6 +68,36 @@ describe("Prisma Effect Generator", () => {
     }).pipe(Effect.provide(MainLayer)),
   );
 
+  it.effect("should support groupBy", () =>
+    Effect.gen(function* () {
+      const prisma = yield* PrismaService;
+      const user = yield* prisma.user.create({
+        data: {
+          email: `test-${Date.now()}@example.com`,
+          name: "Test User",
+          posts: {
+            createMany: {
+              data: [
+                { title: "Test Post 1", content: "Test Content 1" },
+                { title: "Test Post 2", content: "Test Content 2" },
+              ],
+            },
+          },
+        },
+      });
+      const result = yield* prisma.post.groupBy({
+        by: ["authorId"],
+        where: {
+          authorId: user.id,
+        },
+        _count: true,
+      });
+      expect(result.length).toBe(1);
+      expect(result[0]._count).toBe(2);
+      expect(result[0].authorId).toBe(user.id);
+    }).pipe(Effect.provide(MainLayer)),
+  );
+
   it.effect("should support transactions", () =>
     Effect.gen(function* () {
       const prisma = yield* PrismaService;
@@ -138,20 +168,26 @@ describe("Prisma Effect Generator", () => {
     }).pipe(Effect.provide(MainLayer)),
   );
 
-  it.effect("should have a PrismaTransactionClientService in transactions", () =>
-    Effect.gen(function* () {
-      const prisma = yield* PrismaService;
+  it.effect(
+    "should have a PrismaTransactionClientService in transactions",
+    () =>
+      Effect.gen(function* () {
+        const prisma = yield* PrismaService;
 
-      yield* prisma.$transaction(Effect.gen(function* () {
-        // Should have a transaction client service inside the transaction
+        yield* prisma.$transaction(
+          Effect.gen(function* () {
+            // Should have a transaction client service inside the transaction
+            const tx = yield* Effect.serviceOption(
+              PrismaTransactionClientService,
+            );
+            expect(tx._tag).toBe("Some");
+          }),
+        );
+
+        // No transaction client service outside of transaction
         const tx = yield* Effect.serviceOption(PrismaTransactionClientService);
-        expect(tx._tag).toBe("Some");
-      }));
-
-      // No transaction client service outside of transaction
-      const tx = yield* Effect.serviceOption(PrismaTransactionClientService);
-      expect(tx._tag).toBe("None");
-    }).pipe(Effect.provide(MainLayer)),
+        expect(tx._tag).toBe("None");
+      }).pipe(Effect.provide(MainLayer)),
   );
 
   it.effect("should return PrismaUniqueConstraintError on duplicate key", () =>
