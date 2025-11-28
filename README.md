@@ -82,11 +82,10 @@ import {
 } from "./prisma/generated/effect";
 
 // ... in your program
-const LivePrismaLayer = createPrismaClientLayer(new PrismaClient());
-const MainLayer = Layer.mergeAll(
-  LivePrismaLayer,
+const prisma = new PrismaClient({ adapter });
+const PrismaLayer = Layer.provide(
   PrismaService.Default,
-  // ... other layers
+  Layer.succeed(PrismaClientService, prisma),
 );
 ```
 
