@@ -34,8 +34,8 @@ generator client {
 
 generator effect {
   provider = "effect-prisma-generator"
-  output   = "./generated/effect" // relative to the schema.prisma file, e.g. prisma/generated/effect
-  clientImportPath = "../client" // relative to the output path ^here (defaults to "@prisma/client")
+  output   = "./generated/effect.ts" // relative to the schema.prisma file
+  clientImportPath = "./client" // relative to the output path ^
 }
 ```
 
