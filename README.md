@@ -2,12 +2,15 @@
 
 A Prisma generator that creates a fully-typed, Effect-based service wrapper for your Prisma Client.
 
+> **📦 Latest Release: v0.6.0** - [Migration Guide from v0.5](./MIGRATION-0.5-0.6.md)
+
 ## Features
 
 - 🚀 **Effect Integration**: All Prisma operations are wrapped in `Effect` for robust error handling and composability.
 - 🛡️ **Type Safety**: Full TypeScript support with generated types matching your Prisma schema.
 - 🧩 **Dependency Injection**: Integrates seamlessly with Effect's `Layer` and `Context` system.
 - 🔍 **Error Handling**: Automatically catches and wraps Prisma errors into typed `PrismaError` variants.
+- 📊 **Optional Telemetry**: Enable operation tracing with `enableTelemetry` config.
 
 ## Installation
 
@@ -49,6 +52,7 @@ Then run `prisma generate` to generate the client and the Effect service.
 | `clientImportPath` | Import path for Prisma Client (relative to output) | `@prisma/client` |
 | `errorImportPath` | Custom error module path (relative to schema.prisma), e.g. `./errors#MyError` | - |
 | `importFileExtension` | File extension for relative imports (`js`, `ts`, or empty) | `""` |
+| `enableTelemetry` | Wrap operations with `Effect.fn()` for tracing (`"true"` or `"false"`) | `"false"` |
 
 ### ESM / Import Extensions
 
