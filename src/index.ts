@@ -1152,6 +1152,7 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    * Used internally by layer constructors.
    */
   static make: Effect.Effect<IPrismaService, never, PrismaClient> = makePrismaService;
+  static Default = Layer.effect(Prisma, this.make);
 
   /**
    * Create a complete Prisma layer with the given PrismaClient options.
@@ -1180,7 +1181,7 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    */
   static layer = (
     ...args: ConstructorParameters<typeof BasePrismaClient>
-  ) => Layer.effect(Prisma, this.make).pipe(
+  ) => this.Default.pipe(
     Layer.provide(PrismaClient.layer(...args))
   );
 
@@ -1209,7 +1210,7 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    */
   static layerEffect = <R, E>(
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ) => Layer.effect(Prisma, this.make).pipe(
+  ) => this.Default.pipe(
     Layer.provide(PrismaClient.layerEffect(optionsEffect))
   );
 }
@@ -1825,7 +1826,7 @@ const makePrismaService = Effect.gen(function* () {
 
           // If already in a transaction, just run the effect
           if (Option.isSome(currentTx)) {
-            return yield* (effect as  Effect.Effect<
+            return yield* (effect as Effect.Effect<
             Effect.Effect.Success<typeof effect>,
             Effect.Effect.Error<typeof effect>,
             Exclude<

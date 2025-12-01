@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.3] (2025-12-01)
+
+### Features
+
+* **api:** Add `Prisma.Default` static property - A base layer created from `Layer.effect(Prisma, Prisma.make)` that serves as the foundation for `layer` and `layerEffect` methods. This refactoring reduces code duplication and provides a convenient default layer for users who want to provide their own `PrismaClient` separately.
+
 ## [0.6.2] (2025-12-01)
 
 ### Features
