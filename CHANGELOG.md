@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.4] (2025-12-01)
+
+### Bug Fixes
+
+* **layers:** Use `Layer.provideMerge` instead of `Layer.provide` in `layer` and `layerEffect` methods - `provideMerge` is the correct API for merging the Prisma service layer with the PrismaClient layer, ensuring proper layer composition semantics. This fix ensures layers are combined correctly rather than just providing one to the other.
+
 ## [0.6.3] (2025-12-01)
 
 ### Features

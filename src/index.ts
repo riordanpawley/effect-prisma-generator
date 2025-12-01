@@ -1182,7 +1182,7 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
   static layer = (
     ...args: ConstructorParameters<typeof BasePrismaClient>
   ) => this.Default.pipe(
-    Layer.provide(PrismaClient.layer(...args))
+    Layer.provideMerge(PrismaClient.layer(...args))
   );
 
   /**
@@ -1211,7 +1211,7 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
   static layerEffect = <R, E>(
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
   ) => this.Default.pipe(
-    Layer.provide(PrismaClient.layerEffect(optionsEffect))
+    Layer.provideMerge(PrismaClient.layerEffect(optionsEffect))
   );
 }
 
