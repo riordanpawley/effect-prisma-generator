@@ -2,6 +2,7 @@
 import { DMMF } from "@prisma/client/runtime/library";
 import type { GeneratorOptions } from "@prisma/generator";
 import { generatorHandler } from "@prisma/generator-helper";
+import { execSync } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -219,71 +220,71 @@ function generatePrismaInterface(models: DMMF.Model[], customError: CustomErrorC
     return `  ${modelNameCamel}: {
     findUnique: <A extends ${argsType('findUnique')}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'findUnique'> | null, ${errorTypeFor('findUnique')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'findUnique'> | null, ${errorTypeFor('findUnique')}>
 
     findUniqueOrThrow: <A extends ${argsType('findUniqueOrThrow')}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'findUniqueOrThrow'>, ${errorTypeFor('findUniqueOrThrow')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'findUniqueOrThrow'>, ${errorTypeFor('findUniqueOrThrow')}>
 
     findFirst: <A extends ${argsType('findFirst')}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'findFirst'> | null, ${errorTypeFor('findFirst')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'findFirst'> | null, ${errorTypeFor('findFirst')}>
 
     findFirstOrThrow: <A extends ${argsType('findFirstOrThrow')}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'findFirstOrThrow'>, ${errorTypeFor('findFirstOrThrow')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'findFirstOrThrow'>, ${errorTypeFor('findFirstOrThrow')}>
 
     findMany: <A extends ${argsType('findMany')}>(
       args?: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'findMany'>, ${errorTypeFor('findMany')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'findMany'>, ${errorTypeFor('findMany')}>
 
     create: <A extends ${argsType('create')}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'create'>, ${errorTypeFor('create')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'create'>, ${errorTypeFor('create')}>
 
     createMany: <A extends ${argsType('createMany')}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'createMany'>, ${errorTypeFor('createMany')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'createMany'>, ${errorTypeFor('createMany')}>
 
     createManyAndReturn: <A extends ${argsType('createManyAndReturn')}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'createManyAndReturn'>, ${errorTypeFor('createManyAndReturn')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'createManyAndReturn'>, ${errorTypeFor('createManyAndReturn')}>
 
     delete: <A extends ${argsType('delete')}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'delete'>, ${errorTypeFor('delete')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'delete'>, ${errorTypeFor('delete')}>
 
     update: <A extends ${argsType('update')}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'update'>, ${errorTypeFor('update')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'update'>, ${errorTypeFor('update')}>
 
     deleteMany: <A extends ${argsType('deleteMany')}>(
       args?: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'deleteMany'>, ${errorTypeFor('deleteMany')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'deleteMany'>, ${errorTypeFor('deleteMany')}>
 
     updateMany: <A extends ${argsType('updateMany')}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'updateMany'>, ${errorTypeFor('updateMany')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'updateMany'>, ${errorTypeFor('updateMany')}>
 
     updateManyAndReturn: <A extends ${argsType('updateManyAndReturn')}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'updateManyAndReturn'>, ${errorTypeFor('updateManyAndReturn')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'updateManyAndReturn'>, ${errorTypeFor('updateManyAndReturn')}>
 
     upsert: <A extends ${argsType('upsert')}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'upsert'>, ${errorTypeFor('upsert')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'upsert'>, ${errorTypeFor('upsert')}>
 
     count: <A extends ${argsType('count')}>(
       args?: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'count'>, ${errorTypeFor('count')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'count'>, ${errorTypeFor('count')}>
 
     aggregate: <A extends ${argsType('aggregate')}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'aggregate'>, ${errorTypeFor('aggregate')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'aggregate'>, ${errorTypeFor('aggregate')}>
 
     groupBy: <A extends ${argsType('groupBy')}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'groupBy'>, ${errorTypeFor('groupBy')}, PrismaClient>
+    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'groupBy'>, ${errorTypeFor('groupBy')}>
   }`;
   }).join('\n\n');
 
@@ -295,40 +296,40 @@ export interface IPrismaService {
   // Transaction operations
   $transaction: <R, E, A>(
     effect: Effect.Effect<A, E, R>
-  ) => Effect.Effect<A, E | ${errorType}, R | PrismaClient>
+  ) => Effect.Effect<A, E | ${errorType}, R>
 
   $transactionWith: <R, E, A>(
     effect: Effect.Effect<A, E, R>,
     options: TransactionOptions
-  ) => Effect.Effect<A, E | ${errorType}, R | PrismaClient>
+  ) => Effect.Effect<A, E | ${errorType}, R>
 
   $isolatedTransaction: <R, E, A>(
     effect: Effect.Effect<A, E, R>
-  ) => Effect.Effect<A, E | ${errorType}, R | PrismaClient>
+  ) => Effect.Effect<A, E | ${errorType}, R>
 
   $isolatedTransactionWith: <R, E, A>(
     effect: Effect.Effect<A, E, R>,
     options: TransactionOptions
-  ) => Effect.Effect<A, E | ${errorType}, R | PrismaClient>
+  ) => Effect.Effect<A, E | ${errorType}, R>
 
   // Raw SQL operations
   $executeRaw: (
     args: PrismaNamespace.Sql | [PrismaNamespace.Sql, ...any[]]
-  ) => Effect.Effect<number, ${errorType}, PrismaClient>
+  ) => Effect.Effect<number, ${errorType}>
 
   $executeRawUnsafe: (
     query: string,
     ...values: any[]
-  ) => Effect.Effect<number, ${errorType}, PrismaClient>
+  ) => Effect.Effect<number, ${errorType}>
 
   $queryRaw: <T = unknown>(
     args: PrismaNamespace.Sql | [PrismaNamespace.Sql, ...any[]]
-  ) => Effect.Effect<T, ${errorType}, PrismaClient>
+  ) => Effect.Effect<T, ${errorType}>
 
   $queryRawUnsafe: <T = unknown>(
     query: string,
     ...values: any[]
-  ) => Effect.Effect<T, ${errorType}, PrismaClient>
+  ) => Effect.Effect<T, ${errorType}>
 
   // Model operations
 ${modelInterfaces}
@@ -509,7 +510,6 @@ function generateModelOperations(models: DMMF.Model[], customError: CustomErrorC
 
       groupBy: ${wrapTelemetry(`Prisma.${modelNameCamel}.groupBy`, `function* (args) {
         const actualClient = yield* clientOrTx(client);
-        // @ts-ignore - Error messages still propagate to caller
         return yield* Effect.tryPromise<any, ${errorType('PrismaFindError')}>({
           try: () => actualClient.${modelNameCamel}.groupBy(args as any)${strongPromiseCast()},
           catch: (error) => ${mapperFn('mapFindError')}(error, "groupBy", "${modelName}")
@@ -550,7 +550,18 @@ async function generateUnifiedService(
     ? generateCustomErrorService(customError, clientImportPath, rawSqlOperations, modelTypeAliases, prismaInterface, modelOperations, enableTelemetry)
     : generateDefaultErrorService(clientImportPath, rawSqlOperations, modelTypeAliases, prismaInterface, modelOperations, enableTelemetry);
 
-  await fs.writeFile(path.join(outputDir, "index.ts"), serviceContent);
+  const outputPath = path.join(outputDir, "index.ts");
+  await fs.writeFile(outputPath, serviceContent);
+
+  // Format the generated file with Biome
+  try {
+    execSync(`npx @biomejs/biome format --write "${outputPath}"`, {
+      stdio: 'inherit',
+      cwd: process.cwd()
+    });
+  } catch (error) {
+    console.warn('Warning: Failed to format generated code with Biome:', error);
+  }
 }
 
 /**

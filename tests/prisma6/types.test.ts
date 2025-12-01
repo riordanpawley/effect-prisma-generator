@@ -1132,4 +1132,67 @@ describe("Type-level tests", () => {
       };
     });
   });
+
+  // ============================================
+  // PrismaClient Leak Prevention
+  // ============================================
+
+  describe("PrismaClient should not leak in operation requirements", () => {
+    it("findUnique should not require PrismaClient", () => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
+        // Get an operation effect
+        const effect = prisma.user.findUnique({ where: { id: 1 } });
+
+        // The effect should NOT require PrismaClient in its requirements
+        // It should be Effect<User | null, PrismaFindError, never>
+        // not Effect<User | null, PrismaFindError, PrismaClient>
+        expectTypeOf(effect).toMatchTypeOf<Effect.Effect<unknown, PrismaFindError, never>>();
+      };
+    });
+
+    it("create should not require PrismaClient", () => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
+        const effect = prisma.user.create({
+          data: { email: "test@test.com", name: "Test" }
+        });
+
+        expectTypeOf(effect).toMatchTypeOf<Effect.Effect<unknown, PrismaCreateError, never>>();
+      };
+    });
+
+    it("update should not require PrismaClient", () => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
+        const effect = prisma.user.update({
+          where: { id: 1 },
+          data: { name: "Updated" }
+        });
+
+        expectTypeOf(effect).toMatchTypeOf<Effect.Effect<unknown, PrismaUpdateError, never>>();
+      };
+    });
+
+    it("delete should not require PrismaClient", () => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
+        const effect = prisma.user.delete({ where: { id: 1 } });
+
+        expectTypeOf(effect).toMatchTypeOf<Effect.Effect<unknown, PrismaDeleteError, never>>();
+      };
+    });
+
+    it("findMany should not require PrismaClient", () => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
+        const effect = prisma.user.findMany();
+
+        expectTypeOf(effect).toMatchTypeOf<Effect.Effect<unknown[], PrismaFindError, never>>();
+      };
+    });
+
+    it("findUniqueOrThrow should not require PrismaClient", () => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
+        const effect = prisma.user.findUniqueOrThrow({ where: { id: 1 } });
+
+        expectTypeOf(effect).toMatchTypeOf<Effect.Effect<unknown, PrismaFindOrThrowError, never>>();
+      };
+    });
+  });
 });

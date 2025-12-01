@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.1] (2025-12-01)
+
+### Testing
+
+* **types:** Add type tests to verify PrismaClient doesn't leak in operation requirements - Operations now correctly return `Effect<A, E, never>` instead of `Effect<A, E, PrismaClient>`, ensuring cleaner type signatures
+
 ## [0.6.0] (2025-12-01)
 
 ### BREAKING CHANGES
