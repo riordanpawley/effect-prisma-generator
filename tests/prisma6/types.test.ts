@@ -12,10 +12,11 @@
  */
 
 import { describe, expectTypeOf, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Context, Effect } from "effect";
 import {
   Prisma,
   PrismaClient,
+  PrismaTransactionClientService,
   PrismaFindError,
   PrismaFindOrThrowError,
   PrismaCreateError,
@@ -1192,6 +1193,84 @@ describe("Type-level tests", () => {
         const effect = prisma.user.findUniqueOrThrow({ where: { id: 1 } });
 
         expectTypeOf(effect).toMatchTypeOf<Effect.Effect<unknown, PrismaFindOrThrowError, never>>();
+      };
+    });
+  });
+
+  // ============================================
+  // Transaction Type Tests
+  // ============================================
+
+  describe("$transaction should properly handle requirements", () => {
+    it("should accept effects with no requirements", () => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
+        // Effect with no requirements
+        const simpleEffect = Effect.succeed(42);
+
+        // $transaction should accept it
+        const txEffect = prisma.$transaction(simpleEffect);
+
+        // Result should have no requirements (besides what transaction adds)
+        expectTypeOf(txEffect).toMatchTypeOf<Effect.Effect<number, unknown, never>>();
+      };
+    });
+
+    it("should satisfy PrismaTransactionClientService requirement", () => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
+        // Create an effect that explicitly requires PrismaTransactionClientService
+        // (This would be an operation that checks if it's in a transaction)
+        const effectRequiringTx = Effect.gen(function* () {
+          // This simulates an operation that needs the transaction client
+          yield* Effect.serviceOption(PrismaTransactionClientService);
+          return 42;
+        });
+
+        // $transaction should accept effects that require PrismaTransactionClientService
+        const txEffect = prisma.$transaction(effectRequiringTx);
+
+        // The result should NOT require PrismaTransactionClientService
+        // because $transaction provides it internally
+        expectTypeOf(txEffect).toMatchTypeOf<Effect.Effect<number, unknown, never>>();
+      };
+    });
+
+    it("should preserve other requirements while excluding PrismaTransactionClientService", () => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
+        // Create a custom service
+        class MyService extends Context.Tag("MyService")<MyService, { getValue: () => number }>() {}
+
+        // Effect that requires both MyService and PrismaTransactionClientService
+        const effectWithMultipleReqs = Effect.gen(function* () {
+          const myService = yield* MyService;
+          yield* Effect.serviceOption(PrismaTransactionClientService);
+          return myService.getValue();
+        });
+
+        // $transaction should accept it
+        const txEffect = prisma.$transaction(effectWithMultipleReqs);
+
+        // The result should require MyService but NOT PrismaTransactionClientService
+        expectTypeOf(txEffect).toMatchTypeOf<Effect.Effect<number, unknown, MyService>>();
+      };
+    });
+
+    it("operations inside transaction should not leak PrismaTransactionClientService", () => {
+      const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
+        // Using prisma operations inside a transaction
+        const txEffect = prisma.$transaction(
+          Effect.gen(function* () {
+            const user = yield* prisma.user.create({
+              data: { email: "test@test.com", name: "Test" }
+            });
+            const post = yield* prisma.post.create({
+              data: { title: "Hello", authorId: user.id }
+            });
+            return { user, post };
+          })
+        );
+
+        // The transaction effect should not require PrismaTransactionClientService
+        expectTypeOf(txEffect).toMatchTypeOf<Effect.Effect<{ user: unknown; post: unknown }, unknown, never>>();
       };
     });
   });

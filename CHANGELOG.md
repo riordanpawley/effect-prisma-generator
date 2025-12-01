@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.2] (2025-12-01)
+
+### Features
+
+* **types:** Improve `$transaction` type signature to exclude `PrismaTransactionClientService` from requirements - The transaction method now returns `Effect<A, E, Exclude<R, PrismaTransactionClientService>>` instead of `Effect<A, E, R>`, ensuring that the internal transaction service doesn't leak into the caller's requirements. This provides cleaner type signatures for effects using prisma operations inside transactions.
+
+### Testing
+
+* **types:** Add comprehensive type tests for `$transaction` - Added tests verifying that transactions correctly handle effects with no requirements, satisfy the `PrismaTransactionClientService` requirement internally, preserve other requirements while excluding the transaction service, and ensure operations inside transactions don't leak internal service types.
+
 ## [0.6.1] (2025-12-01)
 
 ### Testing
