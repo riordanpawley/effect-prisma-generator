@@ -293,6 +293,7 @@ function generatePrismaInterface(models, customError) {
  * This provides a type contract that the service implementation must satisfy.
  */
 export interface IPrismaService {
+  client: BasePrismaClient
   // Transaction operations
   $transaction: <R, E, A>(
     effect: Effect.Effect<A, E, R>
@@ -692,6 +693,41 @@ const clientOrTx = (client: BasePrismaClient) => Effect.map(
   Option.getOrElse(() => client),
 );
 
+/**
+ * Like Effect.acquireUseRelease, but allows the release function to fail.
+ * Release errors are surfaced in the error channel instead of becoming defects.
+ *
+ * Key properties:
+ * - The release function is always called, even if use fails
+ * - The release function is uninterruptible to ensure cleanup completes
+ * - Release errors are surfaced in the error channel, not as defects
+ */
+const acquireUseReleaseWithErrors = <A, E, R, A2, E2, R2, X, E3, R3>(
+  acquire: Effect.Effect<A, E, R>,
+  use: (a: A) => Effect.Effect<A2, E2, R2>,
+  release: (a: A, exit: Exit.Exit<A2, E2>) => Effect.Effect<X, E3, R3>
+): Effect.Effect<A2, E | E2 | E3, R | R2 | R3> =>
+  Effect.uninterruptibleMask((restore) =>
+    Effect.flatMap(acquire, (a) =>
+      Effect.flatMap(
+        Effect.exit(restore(use(a))),
+        (exit) =>
+          Effect.flatMap(
+            // Make release uninterruptible to ensure cleanup always completes
+            Effect.exit(release(a, exit)),
+            (releaseExit) => {
+              if (Exit.isFailure(releaseExit)) {
+                // Release failed - surface the release error
+                return releaseExit as any;
+              }
+              // Release succeeded - return the original use result
+              return exit as any;
+            }
+          )
+      )
+    )
+  );
+
 ${prismaInterface}
 
 /**
@@ -766,6 +802,7 @@ const makePrismaService = Effect.gen(function* () {
   const client = yield* PrismaClient;
 
   const prismaService: IPrismaService = {
+      client,
       /**
        * Execute an effect within a database transaction.
        * All operations within the effect will be atomic - they either all succeed or all fail.
@@ -802,7 +839,7 @@ const makePrismaService = Effect.gen(function* () {
           }
 
           // Otherwise, start a new transaction
-          return yield* Effect.acquireUseRelease(
+          return yield* acquireUseReleaseWithErrors(
             // Acquire: begin a new transaction with default options
             $begin(client),
 
@@ -818,11 +855,11 @@ const makePrismaService = Effect.gen(function* () {
                 ? Effect.tryPromise({
                     try: () => txClient.$commit(),
                     catch: (error) => mapError(error, "$commit", "Prisma")
-                  }).pipe(Effect.withSpan("txClient.$rollback"), Effect.orDie)
+                  }).pipe(Effect.withSpan("txClient.$commit"))
                 : Effect.tryPromise({
                     try: () => txClient.$rollback(),
                     catch: (error) => mapError(error, "$rollback", "Prisma")
-                  }).pipe(Effect.withSpan("txClient.$rollback"), Effect.orDie)
+                  }).pipe(Effect.withSpan("txClient.$rollback"))
           );
         }),
 
@@ -855,7 +892,7 @@ const makePrismaService = Effect.gen(function* () {
           }
 
           // Otherwise, start a new transaction
-          return yield* Effect.acquireUseRelease(
+          return yield* acquireUseReleaseWithErrors(
             // Acquire: begin a new transaction
             // Prisma merges per-call options with constructor defaults internally
             $begin(client, options),
@@ -872,11 +909,11 @@ const makePrismaService = Effect.gen(function* () {
                 ? Effect.tryPromise({
                     try: () => txClient.$commit(),
                     catch: (error) => mapError(error, "$commit", "Prisma")
-                  }).pipe(Effect.withSpan("txClient.$rollback"), Effect.orDie)
+                  }).pipe(Effect.withSpan("txClient.$rollback"))
                 : Effect.tryPromise({
                     try: () => txClient.$rollback(),
                     catch: (error) => mapError(error, "$rollback", "Prisma")
-                  }).pipe(Effect.withSpan("txClient.$rollback"), Effect.orDie)
+                  }).pipe(Effect.withSpan("txClient.$rollback"))
           );
         }),
 
@@ -909,7 +946,7 @@ const makePrismaService = Effect.gen(function* () {
        */
       $isolatedTransaction: ${enableTelemetry ? 'Effect.fn("Prisma.$isolatedTransaction")' : "Effect.fnUntraced"}(function* (effect) {
           // Always create a fresh transaction
-          return yield* Effect.acquireUseRelease(
+          return yield* acquireUseReleaseWithErrors(
             $begin(client),
             (txClient) =>
               effect.pipe(
@@ -920,11 +957,11 @@ const makePrismaService = Effect.gen(function* () {
                 ? Effect.tryPromise({
                     try: () => txClient.$commit(),
                     catch: (error) => mapError(error, "$commit", "Prisma")
-                  }).pipe(Effect.withSpan("txClient.$rollback"), Effect.orDie)
+                  }).pipe(Effect.withSpan("txClient.$rollback"))
                 : Effect.tryPromise({
                     try: () => txClient.$rollback(),
                     catch: (error) => mapError(error, "$rollback", "Prisma")
-                  }).pipe(Effect.withSpan("txClient.$rollback"), Effect.orDie)
+                  }).pipe(Effect.withSpan("txClient.$rollback"))
           );
         }),
 
@@ -957,7 +994,7 @@ const makePrismaService = Effect.gen(function* () {
        */
       $isolatedTransactionWith: ${enableTelemetry ? 'Effect.fn("Prisma.$isolatedTransactionWith")' : "Effect.fnUntraced"}(function* (effect, options) {
           // Always create a fresh transaction
-          return yield* Effect.acquireUseRelease(
+          return yield* acquireUseReleaseWithErrors(
             $begin(client, options),
             (txClient) =>
               effect.pipe(
@@ -968,11 +1005,11 @@ const makePrismaService = Effect.gen(function* () {
                 ? Effect.tryPromise({
                     try: () => txClient.$commit(),
                     catch: (error) => mapError(error, "$commit", "Prisma")
-                  }).pipe(Effect.withSpan("txClient.$rollback"), Effect.orDie)
+                  }).pipe(Effect.withSpan("txClient.$rollback"))
                 : Effect.tryPromise({
                     try: () => txClient.$rollback(),
                     catch: (error) => mapError(error, "$rollback", "Prisma")
-                  }).pipe(Effect.withSpan("txClient.$rollback"), Effect.orDie)
+                  }).pipe(Effect.withSpan("txClient.$rollback"))
           );
         }),
       ${rawSqlOperations}
@@ -989,6 +1026,7 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    * Used internally by layer constructors.
    */
   static make: Effect.Effect<IPrismaService, never, PrismaClient> = makePrismaService;
+  static Default = Layer.effect(Prisma, this.make);
 
   /**
    * Create a complete Prisma layer with the given PrismaClient options.
@@ -1017,8 +1055,8 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    */
   static layer = (
     ...args: ConstructorParameters<typeof BasePrismaClient>
-  ) => Layer.effect(Prisma, this.make).pipe(
-    Layer.provide(PrismaClient.layer(...args))
+  ) => this.Default.pipe(
+    Layer.provideMerge(PrismaClient.layer(...args))
   );
 
   /**
@@ -1046,8 +1084,8 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    */
   static layerEffect = <R, E>(
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ) => Layer.effect(Prisma, this.make).pipe(
-    Layer.provide(PrismaClient.layerEffect(optionsEffect))
+  ) => this.Default.pipe(
+    Layer.provideMerge(PrismaClient.layerEffect(optionsEffect))
   );
 }
 
@@ -1556,6 +1594,41 @@ const clientOrTx = (client: BasePrismaClient) => Effect.map(
   Option.getOrElse(() => client),
 );
 
+/**
+ * Like Effect.acquireUseRelease, but allows the release function to fail.
+ * Release errors are surfaced in the error channel instead of becoming defects.
+ *
+ * Key properties:
+ * - The release function is always called, even if use fails
+ * - The release function is uninterruptible to ensure cleanup completes
+ * - Release errors are surfaced in the error channel, not as defects
+ */
+const acquireUseReleaseWithErrors = <A, E, R, A2, E2, R2, X, E3, R3>(
+  acquire: Effect.Effect<A, E, R>,
+  use: (a: A) => Effect.Effect<A2, E2, R2>,
+  release: (a: A, exit: Exit.Exit<A2, E2>) => Effect.Effect<X, E3, R3>
+): Effect.Effect<A2, E | E2 | E3, R | R2 | R3> =>
+  Effect.uninterruptibleMask((restore) =>
+    Effect.flatMap(acquire, (a) =>
+      Effect.flatMap(
+        Effect.exit(restore(use(a))),
+        (exit) =>
+          Effect.flatMap(
+            // Make release uninterruptible to ensure cleanup always completes
+            Effect.exit(Effect.uninterruptible(release(a, exit))),
+            (releaseExit) => {
+              if (Exit.isFailure(releaseExit)) {
+                // Release failed - surface the release error
+                return releaseExit as any;
+              }
+              // Release succeeded - return the original use result
+              return exit as any;
+            }
+          )
+      )
+    )
+  );
+
 ${prismaInterface}
 
 /**
@@ -1630,6 +1703,7 @@ const makePrismaService = Effect.gen(function* () {
   const client = yield* PrismaClient;
 
   const prismaService: IPrismaService = {
+      client,
       /**
        * Execute an effect within a database transaction.
        * All operations within the effect will be atomic - they either all succeed or all fail.
@@ -1654,7 +1728,7 @@ const makePrismaService = Effect.gen(function* () {
 
           // If already in a transaction, just run the effect
           if (Option.isSome(currentTx)) {
-            return yield* (effect as  Effect.Effect<
+            return yield* (effect as Effect.Effect<
             Effect.Effect.Success<typeof effect>,
             Effect.Effect.Error<typeof effect>,
             Exclude<
@@ -1665,7 +1739,7 @@ const makePrismaService = Effect.gen(function* () {
           }
 
           // Otherwise, start a new transaction
-          return yield* Effect.acquireUseRelease(
+          return yield* acquireUseReleaseWithErrors(
             // Acquire: begin a new transaction with default options
             $begin(client),
 
@@ -1681,11 +1755,11 @@ const makePrismaService = Effect.gen(function* () {
                 ? Effect.tryPromise({
                     try: () => txClient.$commit(),
                     catch: (error) => mapError(error, "$commit", "Prisma")
-                  }).pipe(Effect.withSpan("txClient.$rollback"), Effect.orDie)
+                  }).pipe(Effect.withSpan("txClient.$rollback"))
                 : Effect.tryPromise({
                     try: () => txClient.$rollback(),
                     catch: (error) => mapError(error, "$rollback", "Prisma")
-                  }).pipe(Effect.withSpan("txClient.$rollback"), Effect.orDie)
+                  }).pipe(Effect.withSpan("txClient.$rollback"))
           );
         }),
 
@@ -1718,7 +1792,7 @@ const makePrismaService = Effect.gen(function* () {
           }
 
           // Otherwise, start a new transaction
-          return yield* Effect.acquireUseRelease(
+          return yield* acquireUseReleaseWithErrors(
             // Acquire: begin a new transaction
             // Prisma merges per-call options with constructor defaults internally
             $begin(client, options),
@@ -1735,11 +1809,11 @@ const makePrismaService = Effect.gen(function* () {
                 ? Effect.tryPromise({
                     try: () => txClient.$commit(),
                     catch: (error) => mapError(error, "$commit", "Prisma")
-                  }).pipe(Effect.withSpan("txClient.$rollback"), Effect.orDie)
+                  }).pipe(Effect.withSpan("txClient.$rollback"))
                 : Effect.tryPromise({
                     try: () => txClient.$rollback(),
                     catch: (error) => mapError(error, "$rollback", "Prisma")
-                  }).pipe(Effect.withSpan("txClient.$rollback"), Effect.orDie)
+                  }).pipe(Effect.withSpan("txClient.$rollback"))
           );
         }),
 
@@ -1772,7 +1846,7 @@ const makePrismaService = Effect.gen(function* () {
        */
       $isolatedTransaction: ${enableTelemetry ? 'Effect.fn("Prisma.$isolatedTransaction")' : "Effect.fnUntraced"}(function* (effect) {
           // Always create a fresh transaction
-          return yield* Effect.acquireUseRelease(
+          return yield* acquireUseReleaseWithErrors(
             $begin(client),
             (txClient) =>
               effect.pipe(
@@ -1783,11 +1857,11 @@ const makePrismaService = Effect.gen(function* () {
                 ? Effect.tryPromise({
                     try: () => txClient.$commit(),
                     catch: (error) => mapError(error, "$commit", "Prisma")
-                  }).pipe(Effect.withSpan("txClient.$rollback"), Effect.orDie)
+                  }).pipe(Effect.withSpan("txClient.$rollback"))
                 : Effect.tryPromise({
                     try: () => txClient.$rollback(),
                     catch: (error) => mapError(error, "$rollback", "Prisma")
-                  }).pipe(Effect.withSpan("txClient.$rollback"), Effect.orDie)
+                  }).pipe(Effect.withSpan("txClient.$rollback"))
           );
         }),
 
@@ -1820,7 +1894,7 @@ const makePrismaService = Effect.gen(function* () {
        */
       $isolatedTransactionWith: ${enableTelemetry ? 'Effect.fn("Prisma.$isolatedTransactionWith")' : "Effect.fnUntraced"}(function* (effect, options) {
           // Always create a fresh transaction
-          return yield* Effect.acquireUseRelease(
+          return yield* acquireUseReleaseWithErrors(
             $begin(client, options),
             (txClient) =>
               effect.pipe(
@@ -1831,11 +1905,11 @@ const makePrismaService = Effect.gen(function* () {
                 ? Effect.tryPromise({
                     try: () => txClient.$commit(),
                     catch: (error) => mapError(error, "$commit", "Prisma")
-                  }).pipe(Effect.withSpan("txClient.$rollback"), Effect.orDie)
+                  }).pipe(Effect.withSpan("txClient.$rollback"))
                 : Effect.tryPromise({
                     try: () => txClient.$rollback(),
                     catch: (error) => mapError(error, "$rollback", "Prisma")
-                  }).pipe(Effect.withSpan("txClient.$rollback"), Effect.orDie)
+                  }).pipe(Effect.withSpan("txClient.$rollback"))
           );
         }),
       ${rawSqlOperations}
