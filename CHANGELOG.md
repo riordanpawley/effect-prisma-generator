@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.5] (2025-12-01)
+
+### Features
+
+* **api:** Add `client` property to `IPrismaService` - The Prisma service now exposes the underlying `PrismaClient` instance directly via a `client` property. This provides convenient access to the raw Prisma client for advanced use cases or when you need to access client-level methods that aren't wrapped by the Effect service.
+
 ## [0.6.4] (2025-12-01)
 
 ### Bug Fixes

@@ -347,6 +347,7 @@ function generatePrismaInterface(
  * This provides a type contract that the service implementation must satisfy.
  */
 export interface IPrismaService {
+  client: BasePrismaClient
   // Transaction operations
   $transaction: <R, E, A>(
     effect: Effect.Effect<A, E, R>
@@ -929,6 +930,7 @@ const makePrismaService = Effect.gen(function* () {
   const client = yield* PrismaClient;
 
   const prismaService: IPrismaService = {
+      client,
       /**
        * Execute an effect within a database transaction.
        * All operations within the effect will be atomic - they either all succeed or all fail.
@@ -1802,6 +1804,7 @@ const makePrismaService = Effect.gen(function* () {
   const client = yield* PrismaClient;
 
   const prismaService: IPrismaService = {
+      client,
       /**
        * Execute an effect within a database transaction.
        * All operations within the effect will be atomic - they either all succeed or all fail.
