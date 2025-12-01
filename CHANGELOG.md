@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.0](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.5.2...v0.6.0) (2025-12-01)
+
+
+### Features
+
+* add Prisma.Default static layer property ([bb7003c](https://github.com/riordanpawley/effect-prisma-generator/commit/bb7003cbcf15e3884057971b43f99fefe0e25f1a))
+* expose underlying PrismaClient via client property ([fa03929](https://github.com/riordanpawley/effect-prisma-generator/commit/fa03929e72775a4ec349bee61d75712ec69982a8))
+* improve $transaction type signature to exclude internal service ([59e0ed9](https://github.com/riordanpawley/effect-prisma-generator/commit/59e0ed983679c8cafecff392be03363440a4730a))
+* interface-first architecture with telemetry support (v0.6.0) ([43bc468](https://github.com/riordanpawley/effect-prisma-generator/commit/43bc46819cde30d6c421d7912c6a15417c4618ba))
+
+
+### Bug Fixes
+
+* use Layer.provideMerge for proper layer composition ([ba5a6e2](https://github.com/riordanpawley/effect-prisma-generator/commit/ba5a6e2eb45bc7aec57cd1923021a54df7f1380e))
+
 ## [0.6.5] (2025-12-01)
 
 ### Features
