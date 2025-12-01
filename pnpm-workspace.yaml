@@ -1,0 +1,5 @@
+packages:
+  # Root package
+  - "."
+  # Test packages
+  - "tests/*"

@@ -3356,11 +3356,11 @@ describe("Prisma 6 Effect Generator", () => {
               Effect.promise(() => prisma.$disconnect()),
             );
 
-            return { tx: prisma, client: prisma };
+            return prisma;
           }),
         );
 
-        const TestLayer = Layer.merge(TrackedPrismaLayer, Prisma.Default);
+        const TestLayer = Layer.effect(Prisma, Prisma.make).pipe(Layer.provide(TrackedPrismaLayer));
 
         // Run a simple query in a scoped context
         const program = Effect.gen(function* () {
@@ -3400,11 +3400,11 @@ describe("Prisma 6 Effect Generator", () => {
               Effect.promise(() => prisma.$disconnect()),
             );
 
-            return { tx: prisma, client: prisma };
+            return prisma;
           }),
         );
 
-        const TestLayer = Layer.merge(TrackedPrismaLayer, Prisma.Default);
+        const TestLayer = Layer.effect(Prisma, Prisma.make).pipe(Layer.provide(TrackedPrismaLayer));
 
         // Run a program that fails
         const program = Effect.gen(function* () {
@@ -3448,7 +3448,7 @@ describe("Prisma 6 Effect Generator", () => {
                 Effect.promise(() => prisma.$disconnect()),
               );
 
-              return { tx: prisma, client: prisma };
+              return prisma;
             }),
           );
 
@@ -3457,7 +3457,7 @@ describe("Prisma 6 Effect Generator", () => {
           const prisma = yield* Prisma;
           yield* prisma.user.findMany();
         }).pipe(
-          Effect.provide(Layer.merge(makeTrackedLayer(), Prisma.Default)),
+          Effect.provide(Layer.effect(Prisma, Prisma.make).pipe(Layer.provide(makeTrackedLayer()))),
           Effect.scoped,
         );
 
@@ -3465,7 +3465,7 @@ describe("Prisma 6 Effect Generator", () => {
           const prisma = yield* Prisma;
           yield* prisma.user.findMany();
         }).pipe(
-          Effect.provide(Layer.merge(makeTrackedLayer(), Prisma.Default)),
+          Effect.provide(Layer.effect(Prisma, Prisma.make).pipe(Layer.provide(makeTrackedLayer()))),
           Effect.scoped,
         );
 

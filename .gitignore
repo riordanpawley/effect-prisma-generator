@@ -1,14 +1,18 @@
+# Dependencies
 node_modules
-.DS_Store
+
+# pnpm
+.pnpm-debug.log*
+
+# Build outputs
 *.tsbuildinfo
-tests/generated
-tests/prisma6/generated
-tests/prisma6/node_modules
-tests/prisma7/generated
-tests/prisma7/node_modules
-tests/custom-error/generated
-tests/custom-error/node_modules
-tests/import-extension/generated
-tests/import-extension/node_modules
+dist
+
+# Generated files
+tests/*/generated
+
+# Database files
 *.db
-tests/benchmark/generated
+
+# OS files
+.DS_Store

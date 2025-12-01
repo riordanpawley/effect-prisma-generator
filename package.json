@@ -1,6 +1,6 @@
 {
   "name": "@riordanpawley/effect-prisma-generator",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "Prisma generator for Effect (fork with Prisma 7 support)",
   "main": "dist/index.js",
   "bin": {
@@ -13,7 +13,7 @@
   "scripts": {
     "build": "tsc && chmod +x dist/index.js",
     "test": "tsx scripts/runTests.ts",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "pnpm run build"
   },
   "repository": {
     "type": "git",
@@ -36,6 +36,7 @@
     "@effect/platform-node": "^0.101.0",
     "@effect/vitest": "^0.27.0",
     "@prisma/client": "^6.19.0",
+    "@prisma/generator": "^6.19.0",
     "@types/node": "^24.10.1",
     "effect": "^3.13.4",
     "prisma": "^6.19.0",

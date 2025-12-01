@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.6.0] (2025-12-01)
+
+### BREAKING CHANGES
+
+* **architecture:** Replaced `Effect.Service` with `Context.Tag` pattern - The service is now defined using an explicit `IPrismaService` interface with a `Context.Tag` class. The generated code structure has changed but the public API remains compatible.
+* **layers:** Removed `Prisma.Live` static property - This was incompatible with Prisma 7 which requires an adapter. Use `Prisma.layer({ adapter })` instead.
+* **client:** `PrismaClient` service structure changed - Previously `yield* PrismaClient` returned `{ tx, client }`, now it returns the client directly: `const client = yield* PrismaClient` instead of `const { client } = yield* PrismaClient`.
+
+### Features
+
+* **telemetry:** Add `enableTelemetry` schema config option - Set to `"true"` to wrap all operations with `Effect.fn("operationName")` for traced execution, or `"false"` (default) for `Effect.fnUntraced`
+* **types:** Interface-first approach with explicit `IPrismaService` - All operation signatures are now defined upfront in the interface, improving TypeScript compilation performance and preventing implementation drift
+* **types:** Explicit type parameters on all `Effect.tryPromise` calls - Each operation now has `Effect.tryPromise<any, SpecificErrorType>({...})` for better type inference and error channel narrowing
+* **errors:** Fixed `*OrThrow` operations to use `PrismaFindOrThrowError` - `findUniqueOrThrow` and `findFirstOrThrow` now correctly use `PrismaFindOrThrowError` which includes `PrismaRecordNotFoundError`, distinct from regular find operations that use `PrismaFindError`
+
+### Performance Improvements
+
+* **types:** Removed type inference complexity - By providing explicit interface types, TypeScript no longer needs to infer complex return types from `Effect.Service`, resulting in faster compilation
+
 ## [0.5.1] (2025-11-27)
 
 ### Performance Improvements
