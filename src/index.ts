@@ -785,10 +785,10 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    */
   static layer = (
     ...args: ConstructorParameters<typeof BasePrismaClient>
-  ) => Layer.scoped(
+  ): Layer.Layer<PrismaClient, never, never> => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
-      const prisma = new BasePrismaClient(...args)
+      const prisma: BasePrismaClient = new BasePrismaClient(...args)
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
       return prisma
     })
@@ -820,11 +820,11 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    */
   static layerEffect = <R, E>(
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ) => Layer.scoped(
+  ): Layer.Layer<PrismaClient, E, R> => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
-      const options = yield* optionsEffect
-      const prisma = new BasePrismaClient(options)
+      const options: ConstructorParameters<typeof BasePrismaClient>[0] = yield* optionsEffect
+      const prisma: BasePrismaClient = new BasePrismaClient(options)
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
       return prisma
     })
@@ -1189,7 +1189,7 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    * Used internally by layer constructors.
    */
   static make: Effect.Effect<IPrismaService, never, PrismaClient> = makePrismaService;
-  static Default = Layer.effect(Prisma, this.make);
+  static Default: Layer.Layer<Prisma, never, PrismaClient> = Layer.effect(Prisma, this.make);
 
   /**
    * Create a complete Prisma layer with the given PrismaClient options.
@@ -1218,7 +1218,7 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    */
   static layer = (
     ...args: ConstructorParameters<typeof BasePrismaClient>
-  ) => this.Default.pipe(
+  ): Layer.Layer<Prisma | PrismaClient, never, never> => this.Default.pipe(
     Layer.provideMerge(PrismaClient.layer(...args))
   );
 
@@ -1247,7 +1247,7 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    */
   static layerEffect = <R, E>(
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ) => this.Default.pipe(
+  ): Layer.Layer<Prisma | PrismaClient, E, R> => this.Default.pipe(
     Layer.provideMerge(PrismaClient.layerEffect(optionsEffect))
   );
 }
@@ -1349,10 +1349,10 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    */
   static layer = (
     ...args: ConstructorParameters<typeof BasePrismaClient>
-  ) => Layer.scoped(
+  ): Layer.Layer<PrismaClient, never, never> => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
-      const prisma = new BasePrismaClient(...args)
+      const prisma: BasePrismaClient = new BasePrismaClient(...args)
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
       return prisma
     })
@@ -1384,11 +1384,11 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    */
   static layerEffect = <R, E>(
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ) => Layer.scoped(
+  ): Layer.Layer<PrismaClient, E, R> => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
-      const options = yield* optionsEffect
-      const prisma = new BasePrismaClient(options)
+      const options: ConstructorParameters<typeof BasePrismaClient>[0] = yield* optionsEffect
+      const prisma: BasePrismaClient = new BasePrismaClient(options)
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
       return prisma
     })
@@ -2097,6 +2097,7 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    * Used internally by layer constructors.
    */
   static make: Effect.Effect<IPrismaService, never, PrismaClient> = makePrismaService;
+  static Default: Layer.Layer<Prisma, never, PrismaClient> = Layer.effect(Prisma, this.make);
 
   /**
    * Create a complete Prisma layer with the given PrismaClient options.
@@ -2125,8 +2126,8 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    */
   static layer = (
     ...args: ConstructorParameters<typeof BasePrismaClient>
-  ) => Layer.effect(Prisma, this.make).pipe(
-    Layer.provide(PrismaClient.layer(...args))
+  ): Layer.Layer<Prisma | PrismaClient, never, never> => this.Default.pipe(
+    Layer.provideMerge(PrismaClient.layer(...args))
   );
 
   /**
@@ -2154,8 +2155,8 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    */
   static layerEffect = <R, E>(
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ) => Layer.effect(Prisma, this.make).pipe(
-    Layer.provide(PrismaClient.layerEffect(optionsEffect))
+  ): Layer.Layer<Prisma | PrismaClient, E, R> => this.Default.pipe(
+    Layer.provideMerge(PrismaClient.layerEffect(optionsEffect))
   );
 }
 

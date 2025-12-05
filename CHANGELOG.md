@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.7] (2025-12-05)
+
+### Performance Improvements
+
+* **types:** Add explicit return type annotations to all generated static methods - All `PrismaClient.layer`, `PrismaClient.layerEffect`, `Prisma.Default`, `Prisma.layer`, and `Prisma.layerEffect` methods now have explicit `Layer.Layer<...>` return types. This significantly improves TypeScript compilation performance by allowing the compiler to reuse pre-computed types instead of re-inferring complex Layer compositions on every usage. Variable declarations within generator functions also now have explicit type annotations.
+
+## [0.6.6] (2025-12-05)
+
+### Bug Fixes
+
+* **transactions:** Prevent server crashes on transaction errors - Fixed transaction error handling to properly catch and surface rollback/commit errors in the error channel instead of allowing them to become defects that crash the server. Transaction operations now use `acquireUseReleaseWithErrors` which ensures cleanup errors are properly handled.
+
 ## [0.6.5] (2025-12-01)
 
 ### Features
