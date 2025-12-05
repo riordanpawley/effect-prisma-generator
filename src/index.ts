@@ -713,7 +713,7 @@ function generateCustomErrorService(
 ): string {
 	const _errorType = customError.className;
 	return `${header}
-import { Context, Effect, Exit, Layer, Option } from "effect"
+import { Context, Effect, Exit, Layer, Option, Scope } from "effect"
 import { Prisma as PrismaNamespace, PrismaClient as BasePrismaClient } from "${clientImportPath}"
 import { ${customError.className}, mapPrismaError } from "${customError.path}"
 
@@ -820,7 +820,7 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    */
   static layerEffect = <R, E>(
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ): Layer.Layer<PrismaClient, E, R> => Layer.scoped(
+  ): Layer.Layer<PrismaClient, E, Exclude<R, Scope.Scope>> => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
       const options: ConstructorParameters<typeof BasePrismaClient>[0] = yield* optionsEffect
@@ -1247,7 +1247,7 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    */
   static layerEffect = <R, E>(
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ): Layer.Layer<Prisma | PrismaClient, E, R> => this.Default.pipe(
+  ): Layer.Layer<Prisma | PrismaClient, E, Exclude<R, Scope.Scope>> => this.Default.pipe(
     Layer.provideMerge(PrismaClient.layerEffect(optionsEffect))
   );
 }
@@ -1269,7 +1269,7 @@ function generateDefaultErrorService(
 ): string {
 	const _errorType = "PrismaError";
 	return `${header}
-import { Context, Data, Effect, Exit, Layer, Option } from "effect"
+import { Context, Data, Effect, Exit, Layer, Option, Scope } from "effect"
 import { Prisma as PrismaNamespace, PrismaClient as BasePrismaClient } from "${clientImportPath}"
 
 // Create local reference to error class for proper type narrowing
@@ -1384,7 +1384,7 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    */
   static layerEffect = <R, E>(
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ): Layer.Layer<PrismaClient, E, R> => Layer.scoped(
+  ): Layer.Layer<PrismaClient, E, Exclude<R, Scope.Scope>> => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
       const options: ConstructorParameters<typeof BasePrismaClient>[0] = yield* optionsEffect
@@ -2155,7 +2155,7 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    */
   static layerEffect = <R, E>(
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ): Layer.Layer<Prisma | PrismaClient, E, R> => this.Default.pipe(
+  ): Layer.Layer<Prisma | PrismaClient, E, Exclude<R, Scope.Scope>> => this.Default.pipe(
     Layer.provideMerge(PrismaClient.layerEffect(optionsEffect))
   );
 }

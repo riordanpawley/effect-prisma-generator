@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.8] (2025-12-05)
+
+### Bug Fixes
+
+* **types:** Exclude `Scope.Scope` from `layerEffect` return types - Both `PrismaClient.layerEffect` and `Prisma.layerEffect` now return `Layer.Layer<..., E, Exclude<R, Scope.Scope>>` instead of `Layer.Layer<..., E, R>`. Since `Layer.scoped` handles the Scope requirement internally, users of the layer shouldn't need to provide Scope - it's an implementation detail that shouldn't leak into the public API. This matches the pattern used for transactions where `PrismaTransactionClientService` is excluded from requirements.
+
 ## [0.6.7] (2025-12-05)
 
 ### Performance Improvements
