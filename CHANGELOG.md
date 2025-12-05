@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.9] (2025-12-05)
+
+### Code Style
+
+* **types:** Use property declaration pattern for static methods - Changed from `static method = <T>(...) => ...` to `static method: <T>(...) => ReturnType = (...)`. This separates the type signature from the implementation, making the code more readable and maintainable. This is the standard TypeScript pattern for typed class properties.
+
 ## [0.6.8] (2025-12-05)
 
 ### Bug Fixes

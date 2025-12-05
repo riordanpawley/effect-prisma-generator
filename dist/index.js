@@ -620,9 +620,9 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    *   transactionOptions: { isolationLevel: "Serializable" }
    * })
    */
-  static layer = (
+  static layer: (
     ...args: ConstructorParameters<typeof BasePrismaClient>
-  ): Layer.Layer<PrismaClient, never, never> => Layer.scoped(
+  ) => Layer.Layer<PrismaClient, never, never> = (...args) => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
       const prisma: BasePrismaClient = new BasePrismaClient(...args)
@@ -655,9 +655,9 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    *   })
    * )
    */
-  static layerEffect = <R, E>(
+  static layerEffect: <R, E>(
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ): Layer.Layer<PrismaClient, E, Exclude<R, Scope.Scope>> => Layer.scoped(
+  ) => Layer.Layer<PrismaClient, E, Exclude<R, Scope.Scope>> = (optionsEffect) => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
       const options: ConstructorParameters<typeof BasePrismaClient>[0] = yield* optionsEffect
@@ -1053,9 +1053,9 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    * // Use it
    * Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
    */
-  static layer = (
+  static layer: (
     ...args: ConstructorParameters<typeof BasePrismaClient>
-  ): Layer.Layer<Prisma | PrismaClient, never, never> => this.Default.pipe(
+  ) => Layer.Layer<Prisma | PrismaClient, never, never> = (...args) => this.Default.pipe(
     Layer.provideMerge(PrismaClient.layer(...args))
   );
 
@@ -1082,9 +1082,9 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    *   })
    * )
    */
-  static layerEffect = <R, E>(
+  static layerEffect: <R, E>(
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ): Layer.Layer<Prisma | PrismaClient, E, Exclude<R, Scope.Scope>> => this.Default.pipe(
+  ) => Layer.Layer<Prisma | PrismaClient, E, Exclude<R, Scope.Scope>> = (optionsEffect) => this.Default.pipe(
     Layer.provideMerge(PrismaClient.layerEffect(optionsEffect))
   );
 }
@@ -1176,9 +1176,9 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    *   transactionOptions: { isolationLevel: "Serializable" }
    * })
    */
-  static layer = (
+  static layer: (
     ...args: ConstructorParameters<typeof BasePrismaClient>
-  ): Layer.Layer<PrismaClient, never, never> => Layer.scoped(
+  ) => Layer.Layer<PrismaClient, never, never> = (...args) => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
       const prisma: BasePrismaClient = new BasePrismaClient(...args)
@@ -1211,9 +1211,9 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    *   })
    * )
    */
-  static layerEffect = <R, E>(
+  static layerEffect: <R, E>(
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ): Layer.Layer<PrismaClient, E, Exclude<R, Scope.Scope>> => Layer.scoped(
+  ) => Layer.Layer<PrismaClient, E, Exclude<R, Scope.Scope>> = (optionsEffect) => Layer.scoped(
     PrismaClient,
     Effect.gen(function* () {
       const options: ConstructorParameters<typeof BasePrismaClient>[0] = yield* optionsEffect
@@ -1953,9 +1953,9 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    * // Use it
    * Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
    */
-  static layer = (
+  static layer: (
     ...args: ConstructorParameters<typeof BasePrismaClient>
-  ): Layer.Layer<Prisma | PrismaClient, never, never> => this.Default.pipe(
+  ) => Layer.Layer<Prisma | PrismaClient, never, never> = (...args) => this.Default.pipe(
     Layer.provideMerge(PrismaClient.layer(...args))
   );
 
@@ -1982,9 +1982,9 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    *   })
    * )
    */
-  static layerEffect = <R, E>(
+  static layerEffect: <R, E>(
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ): Layer.Layer<Prisma | PrismaClient, E, Exclude<R, Scope.Scope>> => this.Default.pipe(
+  ) => Layer.Layer<Prisma | PrismaClient, E, Exclude<R, Scope.Scope>> = (optionsEffect) => this.Default.pipe(
     Layer.provideMerge(PrismaClient.layerEffect(optionsEffect))
   );
 }
