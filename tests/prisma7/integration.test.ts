@@ -1162,7 +1162,7 @@ describe("Prisma 7 Effect Generator", () => {
                   yield* Effect.fail("Inner failure");
                 }),
               )
-              .pipe(Effect.catchAll(() => Effect.succeed("inner-caught")));
+              .pipe(Effect.catchIf(() => true, () => Effect.succeed("inner-caught")));
 
             expect(innerResult).toBe("inner-caught");
 
@@ -1502,7 +1502,7 @@ describe("Prisma 7 Effect Generator", () => {
             const innerResult = yield* prisma
               .$transaction(Effect.fail("Inner failure"))
               .pipe(
-                Effect.catchAll(() => Effect.succeed("caught")),
+                Effect.catchIf(() => true, () => Effect.succeed("caught")),
               );
 
             expect(innerResult).toBe("caught");
@@ -1786,7 +1786,7 @@ describe("Prisma 7 Effect Generator", () => {
             const maybeUser = yield* prisma.user
               .findUniqueOrThrow({ where: { id: 999999 } })
               .pipe(
-                Effect.catchAll((error) => {
+                Effect.catchIf(() => true, (error) => {
                   expect(error).toBeInstanceOf(PrismaRecordNotFoundError);
                   return Effect.succeed(null);
                 }),
@@ -1874,7 +1874,7 @@ describe("Prisma 7 Effect Generator", () => {
                 data: { name: "Ghost" },
               })
               .pipe(
-                Effect.catchAll(() => Effect.succeed("caught")),
+                Effect.catchIf(() => true, () => Effect.succeed("caught")),
               );
 
             expect(updateResult).toBe("caught");

@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "@effect/vitest";
-import { Context, Data, Effect, Layer, pipe, Ref } from "effect";
+import { Data, Effect, Layer, pipe, Ref, ServiceMap } from "effect";
 import {
   Prisma,
   PrismaClient,
@@ -1157,7 +1157,7 @@ describe("Prisma 6 Effect Generator", () => {
                   yield* Effect.fail("Inner failure");
                 }),
               )
-              .pipe(Effect.catchAll(() => Effect.succeed("inner-caught")));
+              .pipe(Effect.catchIf(() => true, () => Effect.succeed("inner-caught")));
 
             expect(innerResult).toBe("inner-caught");
 
@@ -1497,7 +1497,7 @@ describe("Prisma 6 Effect Generator", () => {
             const innerResult = yield* prisma
               .$transaction(Effect.fail("Inner failure"))
               .pipe(
-                Effect.catchAll(() => Effect.succeed("caught")),
+                Effect.catchIf(() => true, () => Effect.succeed("caught")),
               );
 
             expect(innerResult).toBe("caught");
@@ -1781,7 +1781,7 @@ describe("Prisma 6 Effect Generator", () => {
             const maybeUser = yield* prisma.user
               .findUniqueOrThrow({ where: { id: 999999 } })
               .pipe(
-                Effect.catchAll((error) => {
+                Effect.catchIf(() => true, (error) => {
                   expect(error).toBeInstanceOf(PrismaRecordNotFoundError);
                   return Effect.succeed(null);
                 }),
@@ -1869,7 +1869,7 @@ describe("Prisma 6 Effect Generator", () => {
                 data: { name: "Ghost" },
               })
               .pipe(
-                Effect.catchAll(() => Effect.succeed("caught")),
+                Effect.catchIf(() => true, () => Effect.succeed("caught")),
               );
 
             expect(updateResult).toBe("caught");
@@ -2126,10 +2126,7 @@ describe("Prisma 6 Effect Generator", () => {
 
         // A service that tracks audit logs - simulating a real-world use case
         // where you want to record what happened during a transaction
-        class AuditLog extends Context.Tag("AuditLog")<
-          AuditLog,
-          { readonly entries: Ref.Ref<string[]> }
-        >() {}
+        class AuditLog extends ServiceMap.Service<AuditLog, { readonly entries: Ref.Ref<string[]> }>()("AuditLog") {}
 
         const AuditLogLive = Layer.effect(
           AuditLog,
@@ -2693,8 +2690,8 @@ describe("Prisma 6 Effect Generator", () => {
         const prefix = `single-layer-${Date.now()}`;
 
         // A repository service that wraps Prisma
-        class UserRepo extends Effect.Service<UserRepo>()("UserRepo", {
-          effect: Effect.gen(function* () {
+        class UserRepo extends ServiceMap.Service<UserRepo>()("UserRepo", {
+          make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
               create: (email: string, name: string) =>
@@ -2707,7 +2704,7 @@ describe("Prisma 6 Effect Generator", () => {
 
         const RepoLayer = Layer.merge(
           Prisma.layer(),
-          UserRepo.Default,
+          Layer.effect(UserRepo, UserRepo.make),
         );
 
         // Transaction that fails should rollback
@@ -2735,8 +2732,8 @@ describe("Prisma 6 Effect Generator", () => {
         const prefix = `two-level-${Date.now()}`;
 
         // Level 1: Repository services
-        class UserRepo extends Effect.Service<UserRepo>()("UserRepo", {
-          effect: Effect.gen(function* () {
+        class UserRepo extends ServiceMap.Service<UserRepo>()("UserRepo", {
+          make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
               create: (email: string, name: string) =>
@@ -2745,8 +2742,8 @@ describe("Prisma 6 Effect Generator", () => {
           }),
         }) {}
 
-        class PostRepo extends Effect.Service<PostRepo>()("PostRepo", {
-          effect: Effect.gen(function* () {
+        class PostRepo extends ServiceMap.Service<PostRepo>()("PostRepo", {
+          make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
               create: (title: string, authorId: number) =>
@@ -2756,8 +2753,8 @@ describe("Prisma 6 Effect Generator", () => {
         }) {}
 
         // Level 2: Domain service composing repositories
-        class BlogService extends Effect.Service<BlogService>()("BlogService", {
-          effect: Effect.gen(function* () {
+        class BlogService extends ServiceMap.Service<BlogService>()("BlogService", {
+          make: Effect.gen(function* () {
             const users = yield* UserRepo;
             const posts = yield* PostRepo;
             return {
@@ -2774,10 +2771,10 @@ describe("Prisma 6 Effect Generator", () => {
         // Build layer with proper dependency order:
         // BlogService depends on UserRepo + PostRepo, which depend on Prisma
         const PrismaLayer = Prisma.layer();
-        const RepoLayer = Layer.merge(UserRepo.Default, PostRepo.Default).pipe(
+        const RepoLayer = Layer.merge(Layer.effect(UserRepo, UserRepo.make), Layer.effect(PostRepo, PostRepo.make)).pipe(
           Layer.provide(PrismaLayer),
         );
-        const ServiceLayer = BlogService.Default.pipe(
+        const ServiceLayer = Layer.effect(BlogService, BlogService.make).pipe(
           Layer.provide(RepoLayer),
           Layer.provide(PrismaLayer),
         );
@@ -2816,8 +2813,8 @@ describe("Prisma 6 Effect Generator", () => {
         const prefix = `three-level-${Date.now()}`;
 
         // Level 1: Repository services (data access)
-        class UserRepo extends Effect.Service<UserRepo>()("UserRepo", {
-          effect: Effect.gen(function* () {
+        class UserRepo extends ServiceMap.Service<UserRepo>()("UserRepo", {
+          make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
               create: (email: string, name: string) =>
@@ -2828,8 +2825,8 @@ describe("Prisma 6 Effect Generator", () => {
           }),
         }) {}
 
-        class PostRepo extends Effect.Service<PostRepo>()("PostRepo", {
-          effect: Effect.gen(function* () {
+        class PostRepo extends ServiceMap.Service<PostRepo>()("PostRepo", {
+          make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
               create: (title: string, content: string | null, authorId: number) =>
@@ -2841,8 +2838,8 @@ describe("Prisma 6 Effect Generator", () => {
         }) {}
 
         // Level 2: Domain services (business logic)
-        class AuthorService extends Effect.Service<AuthorService>()("AuthorService", {
-          effect: Effect.gen(function* () {
+        class AuthorService extends ServiceMap.Service<AuthorService>()("AuthorService", {
+          make: Effect.gen(function* () {
             const users = yield* UserRepo;
             return {
               register: (email: string, name: string) =>
@@ -2853,8 +2850,8 @@ describe("Prisma 6 Effect Generator", () => {
           }),
         }) {}
 
-        class ContentService extends Effect.Service<ContentService>()("ContentService", {
-          effect: Effect.gen(function* () {
+        class ContentService extends ServiceMap.Service<ContentService>()("ContentService", {
+          make: Effect.gen(function* () {
             const posts = yield* PostRepo;
             return {
               publish: (title: string, content: string, authorId: number) =>
@@ -2866,10 +2863,10 @@ describe("Prisma 6 Effect Generator", () => {
         }) {}
 
         // Level 3: Application service (orchestration)
-        class OnboardingService extends Effect.Service<OnboardingService>()(
+        class OnboardingService extends ServiceMap.Service<OnboardingService>()(
           "OnboardingService",
           {
-            effect: Effect.gen(function* () {
+            make: Effect.gen(function* () {
               const authors = yield* AuthorService;
               const content = yield* ContentService;
               const db = yield* Prisma;
@@ -2909,13 +2906,13 @@ describe("Prisma 6 Effect Generator", () => {
         // Level 2 (Domain) -> Level 1
         // Level 3 (App) -> Level 2 + Prisma
         const PrismaLayer = Prisma.layer();
-        const Level1 = Layer.merge(UserRepo.Default, PostRepo.Default).pipe(
+        const Level1 = Layer.merge(Layer.effect(UserRepo, UserRepo.make), Layer.effect(PostRepo, PostRepo.make)).pipe(
           Layer.provide(PrismaLayer),
         );
-        const Level2 = Layer.merge(AuthorService.Default, ContentService.Default).pipe(
+        const Level2 = Layer.merge(Layer.effect(AuthorService, AuthorService.make), Layer.effect(ContentService, ContentService.make)).pipe(
           Layer.provide(Level1),
         );
-        const ServiceLayer = OnboardingService.Default.pipe(
+        const ServiceLayer = Layer.effect(OnboardingService, OnboardingService.make).pipe(
           Layer.provide(Level2),
           Layer.provide(PrismaLayer),
         );
@@ -2954,8 +2951,8 @@ describe("Prisma 6 Effect Generator", () => {
      * WHY NESTED TRANSACTIONS WORK:
      *
      * When you write:
-     *   class MyRepo extends Effect.Service<MyRepo>()("MyRepo", {
-     *     effect: Effect.gen(function* () {
+     *   class MyRepo extends ServiceMap.Service<MyRepo>()("MyRepo", {
+     *     make: Effect.gen(function* () {
      *       const db = yield* Prisma;  // <-- captured at layer construction
      *       return {
      *         create: (data) => db.user.create({ data })  // <-- returns an Effect
@@ -2989,8 +2986,8 @@ describe("Prisma 6 Effect Generator", () => {
         const prefix = `nested-composed-${Date.now()}`;
 
         // Repository - captures Prisma at layer construction
-        class UserRepo extends Effect.Service<UserRepo>()("UserRepo", {
-          effect: Effect.gen(function* () {
+        class UserRepo extends ServiceMap.Service<UserRepo>()("UserRepo", {
+          make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
               // This returns an Effect that will lookup PrismaClient when run
@@ -3000,8 +2997,8 @@ describe("Prisma 6 Effect Generator", () => {
           }),
         }) {}
 
-        class PostRepo extends Effect.Service<PostRepo>()("PostRepo", {
-          effect: Effect.gen(function* () {
+        class PostRepo extends ServiceMap.Service<PostRepo>()("PostRepo", {
+          make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
               create: (title: string, authorId: number) =>
@@ -3015,10 +3012,10 @@ describe("Prisma 6 Effect Generator", () => {
         }) {}
 
         // Service that uses its own transaction internally
-        class BatchPostService extends Effect.Service<BatchPostService>()(
+        class BatchPostService extends ServiceMap.Service<BatchPostService>()(
           "BatchPostService",
           {
-            effect: Effect.gen(function* () {
+            make: Effect.gen(function* () {
               const posts = yield* PostRepo;
               const db = yield* Prisma;
 
@@ -3036,10 +3033,10 @@ describe("Prisma 6 Effect Generator", () => {
         // 2. RepoLayer provides UserRepo and PostRepo (needs Prisma)
         // 3. BatchPostService needs PostRepo and Prisma
         const PrismaLayer = Prisma.layer();
-        const RepoLayer = Layer.merge(UserRepo.Default, PostRepo.Default).pipe(
+        const RepoLayer = Layer.merge(Layer.effect(UserRepo, UserRepo.make), Layer.effect(PostRepo, PostRepo.make)).pipe(
           Layer.provideMerge(PrismaLayer),
         );
-        const ServiceLayer = BatchPostService.Default.pipe(
+        const ServiceLayer = Layer.effect(BatchPostService, BatchPostService.make).pipe(
           Layer.provideMerge(RepoLayer),
         );
 
@@ -3080,8 +3077,8 @@ describe("Prisma 6 Effect Generator", () => {
         const prisma = yield* Prisma;
         const prefix = `composable-${Date.now()}`;
 
-        class UserRepo extends Effect.Service<UserRepo>()("UserRepo", {
-          effect: Effect.gen(function* () {
+        class UserRepo extends ServiceMap.Service<UserRepo>()("UserRepo", {
+          make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
               create: (email: string, name: string) =>
@@ -3091,8 +3088,8 @@ describe("Prisma 6 Effect Generator", () => {
           }),
         }) {}
 
-        class PostRepo extends Effect.Service<PostRepo>()("PostRepo", {
-          effect: Effect.gen(function* () {
+        class PostRepo extends ServiceMap.Service<PostRepo>()("PostRepo", {
+          make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
               create: (title: string, authorId: number) =>
@@ -3103,7 +3100,7 @@ describe("Prisma 6 Effect Generator", () => {
 
         const ServiceLayer = Layer.merge(
           Prisma.layer(),
-          Layer.merge(UserRepo.Default, PostRepo.Default),
+          Layer.merge(Layer.effect(UserRepo, UserRepo.make), Layer.effect(PostRepo, PostRepo.make)),
         );
 
         // Compose service methods directly in a transaction
@@ -3140,8 +3137,8 @@ describe("Prisma 6 Effect Generator", () => {
         const prefix = `deep-${Date.now()}`;
 
         // Level 1: Base repo that stores effects in closures
-        class UserRepo extends Effect.Service<UserRepo>()("UserRepo", {
-          effect: Effect.gen(function* () {
+        class UserRepo extends ServiceMap.Service<UserRepo>()("UserRepo", {
+          make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
               create: (email: string, name: string) =>
@@ -3156,8 +3153,8 @@ describe("Prisma 6 Effect Generator", () => {
           }),
         }) {}
 
-        class PostRepo extends Effect.Service<PostRepo>()("PostRepo", {
-          effect: Effect.gen(function* () {
+        class PostRepo extends ServiceMap.Service<PostRepo>()("PostRepo", {
+          make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
               create: (title: string, authorId: number) =>
@@ -3167,8 +3164,8 @@ describe("Prisma 6 Effect Generator", () => {
         }) {}
 
         // Level 2: Domain service that pre-creates effect factories
-        class AuthorDomain extends Effect.Service<AuthorDomain>()("AuthorDomain", {
-          effect: Effect.gen(function* () {
+        class AuthorDomain extends ServiceMap.Service<AuthorDomain>()("AuthorDomain", {
+          make: Effect.gen(function* () {
             const users = yield* UserRepo;
             const posts = yield* PostRepo;
 
@@ -3184,8 +3181,8 @@ describe("Prisma 6 Effect Generator", () => {
         }) {}
 
         // Level 3: Application service that composes domains
-        class BlogApp extends Effect.Service<BlogApp>()("BlogApp", {
-          effect: Effect.gen(function* () {
+        class BlogApp extends ServiceMap.Service<BlogApp>()("BlogApp", {
+          make: Effect.gen(function* () {
             const authorDomain = yield* AuthorDomain;
             return {
               onboardWithPost: (email: string, name: string, postTitle: string) =>
@@ -3199,8 +3196,8 @@ describe("Prisma 6 Effect Generator", () => {
         }) {}
 
         // Level 4: Orchestrator that wraps in transaction
-        class Orchestrator extends Effect.Service<Orchestrator>()("Orchestrator", {
-          effect: Effect.gen(function* () {
+        class Orchestrator extends ServiceMap.Service<Orchestrator>()("Orchestrator", {
+          make: Effect.gen(function* () {
             const db = yield* Prisma;
             const blogApp = yield* BlogApp;
             return {
@@ -3212,12 +3209,12 @@ describe("Prisma 6 Effect Generator", () => {
 
         // Build the 4-level layer stack
         const PrismaLayer = Prisma.layer();
-        const Level1 = Layer.merge(UserRepo.Default, PostRepo.Default).pipe(
+        const Level1 = Layer.merge(Layer.effect(UserRepo, UserRepo.make), Layer.effect(PostRepo, PostRepo.make)).pipe(
           Layer.provide(PrismaLayer),
         );
-        const Level2 = AuthorDomain.Default.pipe(Layer.provide(Level1));
-        const Level3 = BlogApp.Default.pipe(Layer.provide(Level2));
-        const Level4 = Orchestrator.Default.pipe(
+        const Level2 = Layer.effect(AuthorDomain, AuthorDomain.make).pipe(Layer.provide(Level1));
+        const Level3 = Layer.effect(BlogApp, BlogApp.make).pipe(Layer.provide(Level2));
+        const Level4 = Layer.effect(Orchestrator, Orchestrator.make).pipe(
           Layer.provide(Level3),
           Layer.provide(PrismaLayer),
         );
@@ -3276,8 +3273,8 @@ describe("Prisma 6 Effect Generator", () => {
         const prefix = `stored-ref-${Date.now()}`;
 
         // Service that stores effect references at construction
-        class CachingRepo extends Effect.Service<CachingRepo>()("CachingRepo", {
-          effect: Effect.gen(function* () {
+        class CachingRepo extends ServiceMap.Service<CachingRepo>()("CachingRepo", {
+          make: Effect.gen(function* () {
             const db = yield* Prisma;
 
             // Store references to effect-returning methods
@@ -3294,7 +3291,7 @@ describe("Prisma 6 Effect Generator", () => {
           }),
         }) {}
 
-        const ServiceLayer = CachingRepo.Default.pipe(
+        const ServiceLayer = Layer.effect(CachingRepo, CachingRepo.make).pipe(
           Layer.provide(Prisma.layer()),
         );
 
@@ -3337,7 +3334,7 @@ describe("Prisma 6 Effect Generator", () => {
         let disconnectCalled = false;
 
         // Create a custom layer that tracks disconnect
-        const TrackedPrismaLayer = Layer.scoped(
+        const TrackedPrismaLayer = Layer.effect(
           PrismaClient,
           Effect.gen(function* () {
             const { PrismaClient } = yield* Effect.promise(() =>
@@ -3382,7 +3379,7 @@ describe("Prisma 6 Effect Generator", () => {
       Effect.gen(function* () {
         let disconnectCalled = false;
 
-        const TrackedPrismaLayer = Layer.scoped(
+        const TrackedPrismaLayer = Layer.effect(
           PrismaClient,
           Effect.gen(function* () {
             const { PrismaClient } = yield* Effect.promise(() =>
@@ -3417,7 +3414,7 @@ describe("Prisma 6 Effect Generator", () => {
         yield* program.pipe(
           Effect.provide(TestLayer),
           Effect.scoped,
-          Effect.catchAll(() => Effect.succeed("caught")),
+          Effect.catchIf(() => true, () => Effect.succeed("caught")),
         );
 
         // Disconnect should still be called despite the failure
@@ -3430,7 +3427,7 @@ describe("Prisma 6 Effect Generator", () => {
         const disconnectCount = { value: 0 };
 
         const makeTrackedLayer = () =>
-          Layer.scoped(
+          Layer.effect(
             PrismaClient,
             Effect.gen(function* () {
               const { PrismaClient } = yield* Effect.promise(() =>

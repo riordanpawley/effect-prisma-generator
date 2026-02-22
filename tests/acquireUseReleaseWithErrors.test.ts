@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Data, Effect, Exit } from "effect";
+import { Cause, Data, Effect, Exit } from "effect";
 
 // Error types for testing
 class AcquireError extends Data.TaggedError("AcquireError")<{ message: string }> {}
@@ -200,9 +200,11 @@ describe("acquireUseReleaseWithErrors", () => {
 
       expect(releaseExit).not.toBeNull();
       expect(Exit.isSuccess(releaseExit!)).toBe(true);
-      if (Exit.isSuccess(releaseExit!)) {
-        expect(releaseExit!.value).toBe("use-success");
-      }
+      const successValue = Exit.match(releaseExit!, {
+        onSuccess: (value) => value,
+        onFailure: () => null,
+      });
+      expect(successValue).toBe("use-success");
     })
   );
 
@@ -296,25 +298,11 @@ describe("acquireUseReleaseWithErrors", () => {
 
   it.effect("should maintain error channel type safety", () =>
     Effect.gen(function* () {
-      // This test verifies that all error types are properly surfaced
-      type PossibleErrors = AcquireError | UseError | ReleaseError;
-
-      const program: Effect.Effect<string, PossibleErrors, never> =
-        acquireUseReleaseWithErrors(
-          Effect.fail(new AcquireError({ message: "acquire" })) as Effect.Effect<
-            string,
-            AcquireError
-          >,
-          () =>
-            Effect.fail(new UseError({ message: "use" })) as Effect.Effect<
-              string,
-              UseError
-            >,
-          () =>
-            Effect.fail(
-              new ReleaseError({ message: "release" })
-            ) as Effect.Effect<void, ReleaseError>
-        );
+      const program = acquireUseReleaseWithErrors(
+        Effect.fail(new AcquireError({ message: "acquire" })),
+        () => Effect.fail(new UseError({ message: "use" })),
+        () => Effect.fail(new ReleaseError({ message: "release" }))
+      );
 
       // Should be able to catch all error types
       const result = yield* program.pipe(
@@ -346,7 +334,7 @@ describe("acquireUseReleaseWithErrors", () => {
       expect(Exit.isFailure(exit)).toBe(true);
       if (Exit.isFailure(exit)) {
         // It's a defect (Die), not a regular failure
-        expect(exit.cause._tag).toBe("Die");
+        expect(exit.cause.reasons.some(Cause.isDieReason)).toBe(true);
       }
       expect(releaseCalled).toBe(true);
     })

@@ -59,16 +59,21 @@ describe("Import File Extension", () => {
         });
       });
 
-      const result = await Effect.runPromiseExit(
-        program.pipe(Effect.provide(Prisma.layer()))
+      const result = await Effect.runPromise(
+        program.pipe(
+          Effect.provide(Prisma.layer()),
+          Effect.as("success"),
+          Effect.catchIf(
+            () => true,
+            (error) =>
+              Effect.succeed(
+                (error as { _tag?: string })._tag ?? "unknown-error-tag"
+              )
+          )
+        )
       );
 
-      expect(result._tag).toBe("Failure");
-      if (result._tag === "Failure") {
-        const error = result.cause;
-        // The error should be our custom MyPrismaError
-        expect(error._tag).toBe("Fail");
-      }
+      expect(result).toBe("MyPrismaError");
     });
   });
 });

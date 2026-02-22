@@ -220,71 +220,71 @@ function generatePrismaInterface(models, customError) {
         return `  ${modelNameCamel}: {
     findUnique: <A extends ${argsType("findUnique")}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'findUnique'> | null, ${errorTypeFor("findUnique")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'findUnique'> | null, ${errorTypeFor("findUnique")}>
 
     findUniqueOrThrow: <A extends ${argsType("findUniqueOrThrow")}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'findUniqueOrThrow'>, ${errorTypeFor("findUniqueOrThrow")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'findUniqueOrThrow'>, ${errorTypeFor("findUniqueOrThrow")}>
 
     findFirst: <A extends ${argsType("findFirst")}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'findFirst'> | null, ${errorTypeFor("findFirst")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'findFirst'> | null, ${errorTypeFor("findFirst")}>
 
     findFirstOrThrow: <A extends ${argsType("findFirstOrThrow")}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'findFirstOrThrow'>, ${errorTypeFor("findFirstOrThrow")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'findFirstOrThrow'>, ${errorTypeFor("findFirstOrThrow")}>
 
     findMany: <A extends ${argsType("findMany")}>(
       args?: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'findMany'>, ${errorTypeFor("findMany")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'findMany'>, ${errorTypeFor("findMany")}>
 
     create: <A extends ${argsType("create")}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'create'>, ${errorTypeFor("create")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'create'>, ${errorTypeFor("create")}>
 
     createMany: <A extends ${argsType("createMany")}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'createMany'>, ${errorTypeFor("createMany")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'createMany'>, ${errorTypeFor("createMany")}>
 
     createManyAndReturn: <A extends ${argsType("createManyAndReturn")}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'createManyAndReturn'>, ${errorTypeFor("createManyAndReturn")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'createManyAndReturn'>, ${errorTypeFor("createManyAndReturn")}>
 
     delete: <A extends ${argsType("delete")}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'delete'>, ${errorTypeFor("delete")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'delete'>, ${errorTypeFor("delete")}>
 
     update: <A extends ${argsType("update")}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'update'>, ${errorTypeFor("update")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'update'>, ${errorTypeFor("update")}>
 
     deleteMany: <A extends ${argsType("deleteMany")}>(
       args?: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'deleteMany'>, ${errorTypeFor("deleteMany")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'deleteMany'>, ${errorTypeFor("deleteMany")}>
 
     updateMany: <A extends ${argsType("updateMany")}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'updateMany'>, ${errorTypeFor("updateMany")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'updateMany'>, ${errorTypeFor("updateMany")}>
 
     updateManyAndReturn: <A extends ${argsType("updateManyAndReturn")}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'updateManyAndReturn'>, ${errorTypeFor("updateManyAndReturn")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'updateManyAndReturn'>, ${errorTypeFor("updateManyAndReturn")}>
 
     upsert: <A extends ${argsType("upsert")}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'upsert'>, ${errorTypeFor("upsert")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'upsert'>, ${errorTypeFor("upsert")}>
 
     count: <A extends ${argsType("count")}>(
       args?: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'count'>, ${errorTypeFor("count")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'count'>, ${errorTypeFor("count")}>
 
     aggregate: <A extends ${argsType("aggregate")}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'aggregate'>, ${errorTypeFor("aggregate")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'aggregate'>, ${errorTypeFor("aggregate")}>
 
     groupBy: <A extends ${argsType("groupBy")}>(
       args: A
-    ) => Effect.Effect<PrismaNamespace.Result<${delegate}, A, 'groupBy'>, ${errorTypeFor("groupBy")}>
+    ) => EffectType<PrismaNamespace.Result<${delegate}, A, 'groupBy'>, ${errorTypeFor("groupBy")}>
   }`;
     })
         .join("\n\n");
@@ -296,41 +296,41 @@ export interface IPrismaService {
   client: BasePrismaClient
   // Transaction operations
   $transaction: <R, E, A>(
-    effect: Effect.Effect<A, E, R>
-  ) => Effect.Effect<A, E | ${errorType}, Exclude<R, PrismaTransactionClientService>>
+    effect: EffectType<A, E, R>
+  ) => EffectType<A, E | ${errorType}, Exclude<R, PrismaTransactionClientService>>
 
   $transactionWith: <R, E, A>(
-    effect: Effect.Effect<A, E, R>,
+    effect: EffectType<A, E, R>,
     options: TransactionOptions
-  ) => Effect.Effect<A, E | ${errorType}, R>
+  ) => EffectType<A, E | ${errorType}, R>
 
   $isolatedTransaction: <R, E, A>(
-    effect: Effect.Effect<A, E, R>
-  ) => Effect.Effect<A, E | ${errorType}, R>
+    effect: EffectType<A, E, R>
+  ) => EffectType<A, E | ${errorType}, R>
 
   $isolatedTransactionWith: <R, E, A>(
-    effect: Effect.Effect<A, E, R>,
+    effect: EffectType<A, E, R>,
     options: TransactionOptions
-  ) => Effect.Effect<A, E | ${errorType}, R>
+  ) => EffectType<A, E | ${errorType}, R>
 
   // Raw SQL operations
   $executeRaw: (
     args: PrismaNamespace.Sql | [PrismaNamespace.Sql, ...any[]]
-  ) => Effect.Effect<number, ${errorType}>
+  ) => EffectType<number, ${errorType}>
 
   $executeRawUnsafe: (
     query: string,
     ...values: any[]
-  ) => Effect.Effect<number, ${errorType}>
+  ) => EffectType<number, ${errorType}>
 
   $queryRaw: <T = unknown>(
     args: PrismaNamespace.Sql | [PrismaNamespace.Sql, ...any[]]
-  ) => Effect.Effect<T, ${errorType}>
+  ) => EffectType<T, ${errorType}>
 
   $queryRawUnsafe: <T = unknown>(
     query: string,
     ...values: any[]
-  ) => Effect.Effect<T, ${errorType}>
+  ) => EffectType<T, ${errorType}>
 
   // Model operations
 ${modelInterfaces}
@@ -550,7 +550,8 @@ async function generateUnifiedService(models, outputDir, clientImportPath, error
 function generateCustomErrorService(customError, clientImportPath, rawSqlOperations, modelTypeAliases, prismaInterface, modelOperations, enableTelemetry) {
     const _errorType = customError.className;
     return `${header}
-import { Context, Effect, Exit, Layer, Option, Scope } from "effect"
+import { Effect, Exit, Layer, Option, Scope, ServiceMap } from "effect"
+import type { Effect as EffectType, Error as EffectError, Services as EffectServices, Success as EffectSuccess } from "effect/Effect"
 import { Prisma as PrismaNamespace, PrismaClient as BasePrismaClient } from "${clientImportPath}"
 import { ${customError.className}, mapPrismaError } from "${customError.path}"
 
@@ -595,10 +596,7 @@ type TransactionOptions = {
  *   transactionOptions: { isolationLevel: "Serializable", timeout: 10000 }
  * })
  */
-export class PrismaClient extends Context.Tag("PrismaClient")<
-  PrismaClient,
-  BasePrismaClient
->() {
+export class PrismaClient extends ServiceMap.Service<PrismaClient, BasePrismaClient>()("PrismaClient") {
   /**
    * Create a PrismaClient layer with the given options.
    * The client will be automatically disconnected when the layer scope ends.
@@ -622,7 +620,7 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    */
   static layer: (
     ...args: ConstructorParameters<typeof BasePrismaClient>
-  ) => Layer.Layer<PrismaClient, never, never> = (...args) => Layer.scoped(
+  ) => Layer.Layer<PrismaClient, never, never> = (...args) => Layer.effect(
     PrismaClient,
     Effect.gen(function* () {
       const prisma: BasePrismaClient = new BasePrismaClient(...args)
@@ -656,8 +654,8 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    * )
    */
   static layerEffect: <R, E>(
-    optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ) => Layer.Layer<PrismaClient, E, Exclude<R, Scope.Scope>> = (optionsEffect) => Layer.scoped(
+    optionsEffect: EffectType<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
+  ) => Layer.Layer<PrismaClient, E, Exclude<R, Scope.Scope>> = (optionsEffect) => Layer.effect(
     PrismaClient,
     Effect.gen(function* () {
       const options: ConstructorParameters<typeof BasePrismaClient>[0] = yield* optionsEffect
@@ -673,10 +671,7 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
  * This service is only available inside \`$transaction\` calls.
  * Use \`Effect.serviceOption(PrismaTransactionClientService)\` to check if you're in a transaction.
  */
-export class PrismaTransactionClientService extends Context.Tag("PrismaTransactionClientService")<
-  PrismaTransactionClientService,
-  PrismaNamespace.TransactionClient
->() {}
+export class PrismaTransactionClientService extends ServiceMap.Service<PrismaTransactionClientService, PrismaNamespace.TransactionClient>()("PrismaTransactionClientService") {}
 
 // Re-export the custom error type for convenience
 export { ${customError.className} }
@@ -703,10 +698,10 @@ const clientOrTx = (client: BasePrismaClient) => Effect.map(
  * - Release errors are surfaced in the error channel, not as defects
  */
 const acquireUseReleaseWithErrors = <A, E, R, A2, E2, R2, X, E3, R3>(
-  acquire: Effect.Effect<A, E, R>,
-  use: (a: A) => Effect.Effect<A2, E2, R2>,
-  release: (a: A, exit: Exit.Exit<A2, E2>) => Effect.Effect<X, E3, R3>
-): Effect.Effect<A2, E | E2 | E3, R | R2 | R3> =>
+  acquire: EffectType<A, E, R>,
+  use: (a: A) => EffectType<A2, E2, R2>,
+  release: (a: A, exit: Exit.Exit<A2, E2>) => EffectType<X, E3, R3>
+): EffectType<A2, E | E2 | E3, R | R2 | R3> =>
   Effect.uninterruptibleMask((restore) =>
     Effect.flatMap(acquire, (a) =>
       Effect.flatMap(
@@ -742,8 +737,8 @@ const $begin = (
     timeout?: number
     isolationLevel?: PrismaNamespace.TransactionIsolationLevel
   }
-): Effect.Effect<FlatTransactionClient, ${customError.className}> =>
-  Effect.async<FlatTransactionClient, ${customError.className}>((resume) => {
+): EffectType<FlatTransactionClient, ${customError.className}> =>
+  Effect.callback<FlatTransactionClient, ${customError.className}>((resume) => {
     let setTxClient: (txClient: PrismaNamespace.TransactionClient) => void
     let commit: () => void
     let rollback: () => void
@@ -828,11 +823,11 @@ const makePrismaService = Effect.gen(function* () {
           // If already in a transaction, just run the effect
           if (Option.isSome(currentTx)) {
             // have to get this to pass the Exclude type
-            return yield* (effect as Effect.Effect<
-            Effect.Effect.Success<typeof effect>,
-            Effect.Effect.Error<typeof effect>,
+            return yield* (effect as EffectType<
+            EffectSuccess<typeof effect>,
+            EffectError<typeof effect>,
             Exclude<
-              Effect.Effect.Context<typeof effect>,
+              EffectServices<typeof effect>,
               PrismaTransactionClientService
             >
           >);
@@ -1020,12 +1015,12 @@ const makePrismaService = Effect.gen(function* () {
   return prismaService;
 });
 
-export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
+export class Prisma extends ServiceMap.Service<Prisma, IPrismaService>()("Prisma") {
   /**
    * Effect that constructs the Prisma service.
    * Used internally by layer constructors.
    */
-  static make: Effect.Effect<IPrismaService, never, PrismaClient> = makePrismaService;
+  static make: EffectType<IPrismaService, never, PrismaClient> = makePrismaService;
   static Default: Layer.Layer<Prisma, never, PrismaClient> = Layer.effect(Prisma, this.make);
 
   /**
@@ -1083,7 +1078,7 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    * )
    */
   static layerEffect: <R, E>(
-    optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
+    optionsEffect: EffectType<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
   ) => Layer.Layer<Prisma | PrismaClient, E, Exclude<R, Scope.Scope>> = (optionsEffect) => this.Default.pipe(
     Layer.provideMerge(PrismaClient.layerEffect(optionsEffect))
   );
@@ -1098,7 +1093,8 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
 function generateDefaultErrorService(clientImportPath, rawSqlOperations, modelTypeAliases, prismaInterface, modelOperations, enableTelemetry) {
     const _errorType = "PrismaError";
     return `${header}
-import { Context, Data, Effect, Exit, Layer, Option, Scope } from "effect"
+import { Data, Effect, Exit, Layer, Option, Scope, ServiceMap } from "effect"
+import type { Effect as EffectType, Error as EffectError, Services as EffectServices, Success as EffectSuccess } from "effect/Effect"
 import { Prisma as PrismaNamespace, PrismaClient as BasePrismaClient } from "${clientImportPath}"
 
 // Create local reference to error class for proper type narrowing
@@ -1151,10 +1147,7 @@ type TransactionOptions = {
  *   transactionOptions: { isolationLevel: "Serializable", timeout: 10000 }
  * })
  */
-export class PrismaClient extends Context.Tag("PrismaClient")<
-  PrismaClient,
-  BasePrismaClient
->() {
+export class PrismaClient extends ServiceMap.Service<PrismaClient, BasePrismaClient>()("PrismaClient") {
   /**
    * Create a PrismaClient layer with the given options.
    * The client will be automatically disconnected when the layer scope ends.
@@ -1178,7 +1171,7 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    */
   static layer: (
     ...args: ConstructorParameters<typeof BasePrismaClient>
-  ) => Layer.Layer<PrismaClient, never, never> = (...args) => Layer.scoped(
+  ) => Layer.Layer<PrismaClient, never, never> = (...args) => Layer.effect(
     PrismaClient,
     Effect.gen(function* () {
       const prisma: BasePrismaClient = new BasePrismaClient(...args)
@@ -1212,8 +1205,8 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
    * )
    */
   static layerEffect: <R, E>(
-    optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ) => Layer.Layer<PrismaClient, E, Exclude<R, Scope.Scope>> = (optionsEffect) => Layer.scoped(
+    optionsEffect: EffectType<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
+  ) => Layer.Layer<PrismaClient, E, Exclude<R, Scope.Scope>> = (optionsEffect) => Layer.effect(
     PrismaClient,
     Effect.gen(function* () {
       const options: ConstructorParameters<typeof BasePrismaClient>[0] = yield* optionsEffect
@@ -1229,10 +1222,7 @@ export class PrismaClient extends Context.Tag("PrismaClient")<
  * This service is only available inside \`$transaction\` calls.
  * Use \`Effect.serviceOption(PrismaTransactionClientService)\` to check if you're in a transaction.
  */
-export class PrismaTransactionClientService extends Context.Tag("PrismaTransactionClientService")<
-  PrismaTransactionClientService,
-  PrismaNamespace.TransactionClient
->() {}
+export class PrismaTransactionClientService extends ServiceMap.Service<PrismaTransactionClientService, PrismaNamespace.TransactionClient>()("PrismaTransactionClientService") {}
 
 export class PrismaUniqueConstraintError extends Data.TaggedError("PrismaUniqueConstraintError")<{
   cause: PrismaNamespace.PrismaClientKnownRequestError
@@ -1604,10 +1594,10 @@ const clientOrTx = (client: BasePrismaClient) => Effect.map(
  * - Release errors are surfaced in the error channel, not as defects
  */
 const acquireUseReleaseWithErrors = <A, E, R, A2, E2, R2, X, E3, R3>(
-  acquire: Effect.Effect<A, E, R>,
-  use: (a: A) => Effect.Effect<A2, E2, R2>,
-  release: (a: A, exit: Exit.Exit<A2, E2>) => Effect.Effect<X, E3, R3>
-): Effect.Effect<A2, E | E2 | E3, R | R2 | R3> =>
+  acquire: EffectType<A, E, R>,
+  use: (a: A) => EffectType<A2, E2, R2>,
+  release: (a: A, exit: Exit.Exit<A2, E2>) => EffectType<X, E3, R3>
+): EffectType<A2, E | E2 | E3, R | R2 | R3> =>
   Effect.uninterruptibleMask((restore) =>
     Effect.flatMap(acquire, (a) =>
       Effect.flatMap(
@@ -1643,8 +1633,8 @@ const $begin = (
     timeout?: number
     isolationLevel?: PrismaNamespace.TransactionIsolationLevel
   }
-): Effect.Effect<FlatTransactionClient, PrismaError> =>
-  Effect.async<FlatTransactionClient, PrismaError>((resume) => {
+): EffectType<FlatTransactionClient, PrismaError> =>
+  Effect.callback<FlatTransactionClient, PrismaError>((resume) => {
     let setTxClient: (txClient: PrismaNamespace.TransactionClient) => void
     let commit: () => void
     let rollback: () => void
@@ -1728,11 +1718,11 @@ const makePrismaService = Effect.gen(function* () {
 
           // If already in a transaction, just run the effect
           if (Option.isSome(currentTx)) {
-            return yield* (effect as Effect.Effect<
-            Effect.Effect.Success<typeof effect>,
-            Effect.Effect.Error<typeof effect>,
+            return yield* (effect as EffectType<
+            EffectSuccess<typeof effect>,
+            EffectError<typeof effect>,
             Exclude<
-              Effect.Effect.Context<typeof effect>,
+              EffectServices<typeof effect>,
               PrismaTransactionClientService
             >
           >);
@@ -1920,12 +1910,12 @@ const makePrismaService = Effect.gen(function* () {
   return prismaService;
 });
 
-export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
+export class Prisma extends ServiceMap.Service<Prisma, IPrismaService>()("Prisma") {
   /**
    * Effect that constructs the Prisma service.
    * Used internally by layer constructors.
    */
-  static make: Effect.Effect<IPrismaService, never, PrismaClient> = makePrismaService;
+  static make: EffectType<IPrismaService, never, PrismaClient> = makePrismaService;
   static Default: Layer.Layer<Prisma, never, PrismaClient> = Layer.effect(Prisma, this.make);
 
   /**
@@ -1983,7 +1973,7 @@ export class Prisma extends Context.Tag("Prisma")<Prisma, IPrismaService>() {
    * )
    */
   static layerEffect: <R, E>(
-    optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
+    optionsEffect: EffectType<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
   ) => Layer.Layer<Prisma | PrismaClient, E, Exclude<R, Scope.Scope>> = (optionsEffect) => this.Default.pipe(
     Layer.provideMerge(PrismaClient.layerEffect(optionsEffect))
   );
