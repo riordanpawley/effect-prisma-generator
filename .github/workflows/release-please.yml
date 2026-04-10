@@ -31,13 +31,19 @@ jobs:
           node-version: "lts/*"
           registry-url: "https://registry.npmjs.org"
 
+      - name: Setup pnpm
+        if: ${{ steps.release.outputs.release_created }}
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Install dependencies
         if: ${{ steps.release.outputs.release_created }}
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build
         if: ${{ steps.release.outputs.release_created }}
-        run: npm run build
+        run: pnpm run build
 
       - name: Publish to npm
         if: ${{ steps.release.outputs.release_created }}
