@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.10](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.9...v0.6.10) (2026-04-10)
+
+
+### Bug Fixes
+
+* generate effectified ([58fd903](https://github.com/riordanpawley/effect-prisma-generator/commit/58fd9030f94963c5de851ba42c215c58587610f4))
+
 ## [0.6.9] (2025-12-05)
 
 ### Code Style
