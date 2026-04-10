@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.11](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.10...v0.6.11) (2026-04-10)
+
+
+### Bug Fixes
+
+* **ci:** use pnpm in release workflow ([c33eee3](https://github.com/riordanpawley/effect-prisma-generator/commit/c33eee3cd92107ab701a534e3d66ed86279bb277))
+
 ## [0.6.10](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.9...v0.6.10) (2026-04-10)
 
 
