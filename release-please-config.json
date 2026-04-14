@@ -1,0 +1,12 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "@riordanpawley/effect-prisma-generator",
+      "versioning": "always-bump-patch",
+      "include-component-in-tag": false,
+      "include-v-in-tag": true
+    }
+  }
+}
