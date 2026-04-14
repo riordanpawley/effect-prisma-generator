@@ -8,61 +8,59 @@
 
 ## [0.6.11](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.10...v0.6.11) (2026-04-10)
 
-
 ### Bug Fixes
 
 * **ci:** use pnpm in release workflow ([c33eee3](https://github.com/riordanpawley/effect-prisma-generator/commit/c33eee3cd92107ab701a534e3d66ed86279bb277))
 
 ## [0.6.10](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.9...v0.6.10) (2026-04-10)
 
-
 ### Bug Fixes
 
 * generate effectified ([58fd903](https://github.com/riordanpawley/effect-prisma-generator/commit/58fd9030f94963c5de851ba42c215c58587610f4))
 
-## [0.6.9] (2025-12-05)
+## [0.6.9](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.8...v0.6.9) (2025-12-05)
 
 ### Code Style
 
 * **types:** Use property declaration pattern for static methods - Changed from `static method = <T>(...) => ...` to `static method: <T>(...) => ReturnType = (...)`. This separates the type signature from the implementation, making the code more readable and maintainable. This is the standard TypeScript pattern for typed class properties.
 
-## [0.6.8] (2025-12-05)
+## [0.6.8](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.7...v0.6.8) (2025-12-05)
 
 ### Bug Fixes
 
 * **types:** Exclude `Scope.Scope` from `layerEffect` return types - Both `PrismaClient.layerEffect` and `Prisma.layerEffect` now return `Layer.Layer<..., E, Exclude<R, Scope.Scope>>` instead of `Layer.Layer<..., E, R>`. Since `Layer.scoped` handles the Scope requirement internally, users of the layer shouldn't need to provide Scope - it's an implementation detail that shouldn't leak into the public API. This matches the pattern used for transactions where `PrismaTransactionClientService` is excluded from requirements.
 
-## [0.6.7] (2025-12-05)
+## [0.6.7](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.6...v0.6.7) (2025-12-05)
 
 ### Performance Improvements
 
 * **types:** Add explicit return type annotations to all generated static methods - All `PrismaClient.layer`, `PrismaClient.layerEffect`, `Prisma.Default`, `Prisma.layer`, and `Prisma.layerEffect` methods now have explicit `Layer.Layer<...>` return types. This significantly improves TypeScript compilation performance by allowing the compiler to reuse pre-computed types instead of re-inferring complex Layer compositions on every usage. Variable declarations within generator functions also now have explicit type annotations.
 
-## [0.6.6] (2025-12-05)
+## [0.6.6](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.5...v0.6.6) (2025-12-05)
 
 ### Bug Fixes
 
 * **transactions:** Prevent server crashes on transaction errors - Fixed transaction error handling to properly catch and surface rollback/commit errors in the error channel instead of allowing them to become defects that crash the server. Transaction operations now use `acquireUseReleaseWithErrors` which ensures cleanup errors are properly handled.
 
-## [0.6.5] (2025-12-01)
+## [0.6.5](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.4...v0.6.5) (2025-12-01)
 
 ### Features
 
 * **api:** Add `client` property to `IPrismaService` - The Prisma service now exposes the underlying `PrismaClient` instance directly via a `client` property. This provides convenient access to the raw Prisma client for advanced use cases or when you need to access client-level methods that aren't wrapped by the Effect service.
 
-## [0.6.4] (2025-12-01)
+## [0.6.4](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.3...v0.6.4) (2025-12-01)
 
 ### Bug Fixes
 
 * **layers:** Use `Layer.provideMerge` instead of `Layer.provide` in `layer` and `layerEffect` methods - `provideMerge` is the correct API for merging the Prisma service layer with the PrismaClient layer, ensuring proper layer composition semantics. This fix ensures layers are combined correctly rather than just providing one to the other.
 
-## [0.6.3] (2025-12-01)
+## [0.6.3](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.2...v0.6.3) (2025-12-01)
 
 ### Features
 
 * **api:** Add `Prisma.Default` static property - A base layer created from `Layer.effect(Prisma, Prisma.make)` that serves as the foundation for `layer` and `layerEffect` methods. This refactoring reduces code duplication and provides a convenient default layer for users who want to provide their own `PrismaClient` separately.
 
-## [0.6.2] (2025-12-01)
+## [0.6.2](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.1...v0.6.2) (2025-12-01)
 
 ### Features
 
@@ -72,13 +70,13 @@
 
 * **types:** Add comprehensive type tests for `$transaction` - Added tests verifying that transactions correctly handle effects with no requirements, satisfy the `PrismaTransactionClientService` requirement internally, preserve other requirements while excluding the transaction service, and ensure operations inside transactions don't leak internal service types.
 
-## [0.6.1] (2025-12-01)
+## [0.6.1](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.0...v0.6.1) (2025-12-01)
 
 ### Testing
 
 * **types:** Add type tests to verify PrismaClient doesn't leak in operation requirements - Operations now correctly return `Effect<A, E, never>` instead of `Effect<A, E, PrismaClient>`, ensuring cleaner type signatures
 
-## [0.6.0] (2025-12-01)
+## [0.6.0](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.5.2...v0.6.0) (2025-12-01)
 
 ### BREAKING CHANGES
 
@@ -97,7 +95,7 @@
 
 * **types:** Removed type inference complexity - By providing explicit interface types, TypeScript no longer needs to infer complex return types from `Effect.Service`, resulting in faster compilation
 
-## [0.5.1] (2025-11-27)
+## [0.5.1](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.5.0...v0.5.1) (2025-11-27)
 
 ### Performance Improvements
 
@@ -112,7 +110,7 @@
 
 * **benchmark:** Add benchmark test package with large schema (60+ models) to measure TypeScript compilation performance improvements
 
-## [0.5.0] (2025-11-26)
+## [0.5.0](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.4.0...v0.5.0) (2025-11-26)
 
 ### BREAKING CHANGES
 

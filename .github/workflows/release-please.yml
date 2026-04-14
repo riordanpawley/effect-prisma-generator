@@ -17,7 +17,8 @@ jobs:
       - uses: googleapis/release-please-action@v4
         id: release
         with:
-          release-type: node
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
 
       # The following steps only run when a release was actually created
       - name: Checkout
@@ -45,7 +46,7 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
         run: pnpm run build
 
-      - name: Publish to npm
+      - name: Publish to npm registry
         if: ${{ steps.release.outputs.release_created }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

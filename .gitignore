@@ -16,3 +16,4 @@ tests/*/generated
 
 # OS files
 .DS_Store
+/.azedarach
