@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.14](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.13...v0.6.14) (2026-04-14)
+
+
+### Bug Fixes
+
+* **release:** use valid npm dist-tag ([e68a1c0](https://github.com/riordanpawley/effect-prisma-generator/commit/e68a1c0afddc93951d3ba667c0a06e7b1f68e40e))
+
 ## [0.6.13](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.12...v0.6.13) (2026-04-14)
 
 
