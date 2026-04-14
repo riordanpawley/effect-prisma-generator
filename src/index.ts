@@ -168,7 +168,13 @@ function generateRawSqlOperations(
 			`function* (query) {
       const actualClient = yield* clientOrTx(client);
       return yield* Effect.tryPromise<any, ${errorType}>({
-        try: () => actualClient.$queryRawTyped(query) as any,
+        try: () => {
+          const queryRawTyped = (actualClient as any).$queryRawTyped;
+          if (typeof queryRawTyped !== "function") {
+            throw new Error("$queryRawTyped is not supported by this Prisma client");
+          }
+          return queryRawTyped.call(actualClient, query) as any;
+        },
         catch: (error) => mapError(error, "$queryRawTyped", "Prisma")
       });
     }`,
@@ -392,9 +398,9 @@ export interface IPrismaService {
     args: PrismaNamespace.Sql | [PrismaNamespace.Sql, ...any[]]
   ) => Effect.Effect<T, ${errorType}>
 
-  $queryRawTyped: <T>(
-    query: PrismaNamespace.TypedSql<unknown[], T>
-  ) => Effect.Effect<T[], ${errorType}>
+  $queryRawTyped: (
+    query: PrismaTypedQueryArg
+  ) => Effect.Effect<PrismaTypedQueryResult, ${errorType}>
 
   $queryRawUnsafe: <T = unknown>(
     query: string,
@@ -747,6 +753,16 @@ type FlatTransactionClient = PrismaNamespace.TransactionClient & {
   $commit: () => Promise<void>
   $rollback: () => Promise<void>
 }
+
+// Optional typed query support (Prisma versions that expose $queryRawTyped)
+type PrismaQueryRawTypedFn = BasePrismaClient extends {
+  $queryRawTyped: (...args: infer A) => infer R
+}
+  ? (...args: A) => R
+  : (query: never) => Promise<never>
+
+type PrismaTypedQueryArg = Parameters<PrismaQueryRawTypedFn>[0]
+type PrismaTypedQueryResult = Awaited<ReturnType<PrismaQueryRawTypedFn>>
 
 /** Transaction options for $transaction and $isolatedTransaction */
 type TransactionOptions = {
@@ -1311,6 +1327,16 @@ type FlatTransactionClient = PrismaNamespace.TransactionClient & {
   $commit: () => Promise<void>
   $rollback: () => Promise<void>
 }
+
+// Optional typed query support (Prisma versions that expose $queryRawTyped)
+type PrismaQueryRawTypedFn = BasePrismaClient extends {
+  $queryRawTyped: (...args: infer A) => infer R
+}
+  ? (...args: A) => R
+  : (query: never) => Promise<never>
+
+type PrismaTypedQueryArg = Parameters<PrismaQueryRawTypedFn>[0]
+type PrismaTypedQueryResult = Awaited<ReturnType<PrismaQueryRawTypedFn>>
 
 /** Transaction options for $transaction and $isolatedTransaction */
 type TransactionOptions = {
