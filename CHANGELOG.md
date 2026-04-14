@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/riordanpawley/effect-prisma-generator/compare/v1.1.0...v1.1.1) (2026-04-14)
+
+
+### Bug Fixes
+
+* **release:** keep plain v-prefixed tags in release-please ([19796cf](https://github.com/riordanpawley/effect-prisma-generator/commit/19796cfa3c0671232b6abc4376833530773efff3))
+
 ## [1.1.0](https://github.com/riordanpawley/effect-prisma-generator/compare/v1.0.0...v1.1.0) (2026-04-14)
 
 ### Miscellaneous Chores
