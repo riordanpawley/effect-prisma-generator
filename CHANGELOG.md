@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.11](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.9...v0.6.11) (2026-04-14)
+
+
+### Miscellaneous Chores
+
+* **release:** reset 0.x baseline ([b23284a](https://github.com/riordanpawley/effect-prisma-generator/commit/b23284a0b4abfcee8d69090de9c9ecffdc044477))
+
 ## [0.6.9] (2025-12-05)
 
 ### Code Style
