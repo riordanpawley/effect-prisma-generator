@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.12](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.11...v0.6.12) (2026-04-14)
+
+
+### Bug Fixes
+
+* **generator:** add  to prisma service ([86a079d](https://github.com/riordanpawley/effect-prisma-generator/commit/86a079d08eda7f2ac9f47adb7764ae8b057304ee))
+* **release:** use pnpm in publish workflow ([79b197a](https://github.com/riordanpawley/effect-prisma-generator/commit/79b197a6bc36e12e0447a2ef7529166dc20c1c1a))
+
+
+### Miscellaneous Chores
+
+* **release:** roll forward patch line ([792e50f](https://github.com/riordanpawley/effect-prisma-generator/commit/792e50f0eaeb864308de7241fc090d007658a671))
+
 ## [0.6.11](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.9...v0.6.11) (2026-04-14)
 
 
