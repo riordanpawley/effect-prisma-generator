@@ -49,4 +49,4 @@ jobs:
 
       - name: Publish to npm registry
         if: ${{ steps.release.outputs.release_created }}
-        run: npm publish --provenance --access public --tag v3
+        run: npm publish --provenance --access public --tag effect-v3
