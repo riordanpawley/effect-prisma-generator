@@ -20,6 +20,7 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           target-branch: release/0.x
+          versioning-strategy: always-bump-patch
 
       - name: Checkout
         if: ${{ steps.release.outputs.release_created }}
