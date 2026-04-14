@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.0](https://github.com/riordanpawley/effect-prisma-generator/compare/v1.0.0...v1.1.0) (2026-04-14)
+
+### Miscellaneous Chores
+
+* release 1.1.0
+
 ## [0.6.11](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.10...v0.6.11) (2026-04-10)
 
 
