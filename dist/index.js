@@ -129,6 +129,14 @@ function generateRawSqlOperations(customError, enableTelemetry) {
       });
     }`)},
 
+    $queryRawTyped: ${wrapTelemetry("Prisma.$queryRawTyped", `function* (query) {
+      const actualClient = yield* clientOrTx(client);
+      return yield* Effect.tryPromise<any, ${errorType}>({
+        try: () => actualClient.$queryRawTyped(query) as any,
+        catch: (error) => mapError(error, "$queryRawTyped", "Prisma")
+      });
+    }`)},
+
     $queryRawUnsafe: ${wrapTelemetry("Prisma.$queryRawUnsafe", `function* (query, ...values) {
       const actualClient = yield* clientOrTx(client);
       return yield* Effect.tryPromise<any, ${errorType}>({
@@ -326,6 +334,10 @@ export interface IPrismaService {
   $queryRaw: <T = unknown>(
     args: PrismaNamespace.Sql | [PrismaNamespace.Sql, ...any[]]
   ) => Effect.Effect<T, ${errorType}>
+
+  $queryRawTyped: <T>(
+    query: PrismaNamespace.TypedSql<unknown[], T>
+  ) => Effect.Effect<T[], ${errorType}>
 
   $queryRawUnsafe: <T = unknown>(
     query: string,
