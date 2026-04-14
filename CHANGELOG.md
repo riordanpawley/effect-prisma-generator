@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.12](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.11...v0.6.12) (2026-04-14)
+
+
+### Bug Fixes
+
+* **release:** keep plain v-prefixed tags in release-please ([19796cf](https://github.com/riordanpawley/effect-prisma-generator/commit/19796cfa3c0671232b6abc4376833530773efff3))
+* **release:** use npm trusted publishing (OIDC) ([e1ff664](https://github.com/riordanpawley/effect-prisma-generator/commit/e1ff6643af98543da13b68e51d381a286b1288b2))
+
 ## [1.1.2](https://github.com/riordanpawley/effect-prisma-generator/compare/v1.1.1...v1.1.2) (2026-04-14)
 
 
