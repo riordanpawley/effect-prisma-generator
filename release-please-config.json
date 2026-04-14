@@ -4,7 +4,6 @@
     ".": {
       "release-type": "node",
       "package-name": "@riordanpawley/effect-prisma-generator",
-      "versioning": "always-bump-patch",
       "include-component-in-tag": false,
       "include-v-in-tag": true
     }

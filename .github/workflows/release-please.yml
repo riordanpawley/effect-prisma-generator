@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - release/0.x
 
 permissions:
   contents: write
@@ -19,6 +20,7 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          target-branch: ${{ github.ref_name }}
 
       # The following steps only run when a release was actually created
       - name: Checkout
