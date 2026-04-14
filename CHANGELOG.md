@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.15](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.14...v0.6.15) (2026-04-14)
+
+
+### Bug Fixes
+
+* **generator:** make queryRawTyped backward-compatible ([0cc9533](https://github.com/riordanpawley/effect-prisma-generator/commit/0cc9533f85c7cd4389f48e65204d4d3fdc9a8a5f))
+
 ## [0.6.14](https://github.com/riordanpawley/effect-prisma-generator/compare/v0.6.13...v0.6.14) (2026-04-14)
 
 
