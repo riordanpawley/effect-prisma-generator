@@ -12,7 +12,7 @@
  */
 
 import { describe, expectTypeOf, it } from "@effect/vitest";
-import { Effect, ServiceMap } from "effect";
+import { Context, Effect } from "effect";
 import {
   Prisma,
   PrismaClient,
@@ -1237,7 +1237,7 @@ describe("Type-level tests", () => {
     it("should preserve other requirements while excluding PrismaTransactionClientService", () => {
       const _typeCheck = (prisma: Effect.Effect.Success<typeof Prisma>) => {
         // Create a custom service
-        class MyService extends ServiceMap.Service<MyService, { getValue: () => number }>()("MyService") {}
+        class MyService extends Context.Service<MyService, { getValue: () => number }>()("MyService") {}
 
         // Effect that requires both MyService and PrismaTransactionClientService
         const effectWithMultipleReqs = Effect.gen(function* () {

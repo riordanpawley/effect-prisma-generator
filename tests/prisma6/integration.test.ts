@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "@effect/vitest";
-import { Data, Effect, Layer, pipe, Ref, ServiceMap } from "effect";
+import { Context, Data, Effect, Layer, pipe, Ref } from "effect";
 import {
   Prisma,
   PrismaClient,
@@ -2126,7 +2126,7 @@ describe("Prisma 6 Effect Generator", () => {
 
         // A service that tracks audit logs - simulating a real-world use case
         // where you want to record what happened during a transaction
-        class AuditLog extends ServiceMap.Service<AuditLog, { readonly entries: Ref.Ref<string[]> }>()("AuditLog") {}
+        class AuditLog extends Context.Service<AuditLog, { readonly entries: Ref.Ref<string[]> }>()("AuditLog") {}
 
         const AuditLogLive = Layer.effect(
           AuditLog,
@@ -2690,7 +2690,7 @@ describe("Prisma 6 Effect Generator", () => {
         const prefix = `single-layer-${Date.now()}`;
 
         // A repository service that wraps Prisma
-        class UserRepo extends ServiceMap.Service<UserRepo>()("UserRepo", {
+        class UserRepo extends Context.Service<UserRepo>()("UserRepo", {
           make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
@@ -2732,7 +2732,7 @@ describe("Prisma 6 Effect Generator", () => {
         const prefix = `two-level-${Date.now()}`;
 
         // Level 1: Repository services
-        class UserRepo extends ServiceMap.Service<UserRepo>()("UserRepo", {
+        class UserRepo extends Context.Service<UserRepo>()("UserRepo", {
           make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
@@ -2742,7 +2742,7 @@ describe("Prisma 6 Effect Generator", () => {
           }),
         }) {}
 
-        class PostRepo extends ServiceMap.Service<PostRepo>()("PostRepo", {
+        class PostRepo extends Context.Service<PostRepo>()("PostRepo", {
           make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
@@ -2753,7 +2753,7 @@ describe("Prisma 6 Effect Generator", () => {
         }) {}
 
         // Level 2: Domain service composing repositories
-        class BlogService extends ServiceMap.Service<BlogService>()("BlogService", {
+        class BlogService extends Context.Service<BlogService>()("BlogService", {
           make: Effect.gen(function* () {
             const users = yield* UserRepo;
             const posts = yield* PostRepo;
@@ -2813,7 +2813,7 @@ describe("Prisma 6 Effect Generator", () => {
         const prefix = `three-level-${Date.now()}`;
 
         // Level 1: Repository services (data access)
-        class UserRepo extends ServiceMap.Service<UserRepo>()("UserRepo", {
+        class UserRepo extends Context.Service<UserRepo>()("UserRepo", {
           make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
@@ -2825,7 +2825,7 @@ describe("Prisma 6 Effect Generator", () => {
           }),
         }) {}
 
-        class PostRepo extends ServiceMap.Service<PostRepo>()("PostRepo", {
+        class PostRepo extends Context.Service<PostRepo>()("PostRepo", {
           make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
@@ -2838,7 +2838,7 @@ describe("Prisma 6 Effect Generator", () => {
         }) {}
 
         // Level 2: Domain services (business logic)
-        class AuthorService extends ServiceMap.Service<AuthorService>()("AuthorService", {
+        class AuthorService extends Context.Service<AuthorService>()("AuthorService", {
           make: Effect.gen(function* () {
             const users = yield* UserRepo;
             return {
@@ -2850,7 +2850,7 @@ describe("Prisma 6 Effect Generator", () => {
           }),
         }) {}
 
-        class ContentService extends ServiceMap.Service<ContentService>()("ContentService", {
+        class ContentService extends Context.Service<ContentService>()("ContentService", {
           make: Effect.gen(function* () {
             const posts = yield* PostRepo;
             return {
@@ -2863,7 +2863,7 @@ describe("Prisma 6 Effect Generator", () => {
         }) {}
 
         // Level 3: Application service (orchestration)
-        class OnboardingService extends ServiceMap.Service<OnboardingService>()(
+        class OnboardingService extends Context.Service<OnboardingService>()(
           "OnboardingService",
           {
             make: Effect.gen(function* () {
@@ -2951,7 +2951,7 @@ describe("Prisma 6 Effect Generator", () => {
      * WHY NESTED TRANSACTIONS WORK:
      *
      * When you write:
-     *   class MyRepo extends ServiceMap.Service<MyRepo>()("MyRepo", {
+     *   class MyRepo extends Context.Service<MyRepo>()("MyRepo", {
      *     make: Effect.gen(function* () {
      *       const db = yield* Prisma;  // <-- captured at layer construction
      *       return {
@@ -2986,7 +2986,7 @@ describe("Prisma 6 Effect Generator", () => {
         const prefix = `nested-composed-${Date.now()}`;
 
         // Repository - captures Prisma at layer construction
-        class UserRepo extends ServiceMap.Service<UserRepo>()("UserRepo", {
+        class UserRepo extends Context.Service<UserRepo>()("UserRepo", {
           make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
@@ -2997,7 +2997,7 @@ describe("Prisma 6 Effect Generator", () => {
           }),
         }) {}
 
-        class PostRepo extends ServiceMap.Service<PostRepo>()("PostRepo", {
+        class PostRepo extends Context.Service<PostRepo>()("PostRepo", {
           make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
@@ -3012,7 +3012,7 @@ describe("Prisma 6 Effect Generator", () => {
         }) {}
 
         // Service that uses its own transaction internally
-        class BatchPostService extends ServiceMap.Service<BatchPostService>()(
+        class BatchPostService extends Context.Service<BatchPostService>()(
           "BatchPostService",
           {
             make: Effect.gen(function* () {
@@ -3077,7 +3077,7 @@ describe("Prisma 6 Effect Generator", () => {
         const prisma = yield* Prisma;
         const prefix = `composable-${Date.now()}`;
 
-        class UserRepo extends ServiceMap.Service<UserRepo>()("UserRepo", {
+        class UserRepo extends Context.Service<UserRepo>()("UserRepo", {
           make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
@@ -3088,7 +3088,7 @@ describe("Prisma 6 Effect Generator", () => {
           }),
         }) {}
 
-        class PostRepo extends ServiceMap.Service<PostRepo>()("PostRepo", {
+        class PostRepo extends Context.Service<PostRepo>()("PostRepo", {
           make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
@@ -3137,7 +3137,7 @@ describe("Prisma 6 Effect Generator", () => {
         const prefix = `deep-${Date.now()}`;
 
         // Level 1: Base repo that stores effects in closures
-        class UserRepo extends ServiceMap.Service<UserRepo>()("UserRepo", {
+        class UserRepo extends Context.Service<UserRepo>()("UserRepo", {
           make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
@@ -3153,7 +3153,7 @@ describe("Prisma 6 Effect Generator", () => {
           }),
         }) {}
 
-        class PostRepo extends ServiceMap.Service<PostRepo>()("PostRepo", {
+        class PostRepo extends Context.Service<PostRepo>()("PostRepo", {
           make: Effect.gen(function* () {
             const db = yield* Prisma;
             return {
@@ -3164,7 +3164,7 @@ describe("Prisma 6 Effect Generator", () => {
         }) {}
 
         // Level 2: Domain service that pre-creates effect factories
-        class AuthorDomain extends ServiceMap.Service<AuthorDomain>()("AuthorDomain", {
+        class AuthorDomain extends Context.Service<AuthorDomain>()("AuthorDomain", {
           make: Effect.gen(function* () {
             const users = yield* UserRepo;
             const posts = yield* PostRepo;
@@ -3181,7 +3181,7 @@ describe("Prisma 6 Effect Generator", () => {
         }) {}
 
         // Level 3: Application service that composes domains
-        class BlogApp extends ServiceMap.Service<BlogApp>()("BlogApp", {
+        class BlogApp extends Context.Service<BlogApp>()("BlogApp", {
           make: Effect.gen(function* () {
             const authorDomain = yield* AuthorDomain;
             return {
@@ -3196,7 +3196,7 @@ describe("Prisma 6 Effect Generator", () => {
         }) {}
 
         // Level 4: Orchestrator that wraps in transaction
-        class Orchestrator extends ServiceMap.Service<Orchestrator>()("Orchestrator", {
+        class Orchestrator extends Context.Service<Orchestrator>()("Orchestrator", {
           make: Effect.gen(function* () {
             const db = yield* Prisma;
             const blogApp = yield* BlogApp;
@@ -3273,7 +3273,7 @@ describe("Prisma 6 Effect Generator", () => {
         const prefix = `stored-ref-${Date.now()}`;
 
         // Service that stores effect references at construction
-        class CachingRepo extends ServiceMap.Service<CachingRepo>()("CachingRepo", {
+        class CachingRepo extends Context.Service<CachingRepo>()("CachingRepo", {
           make: Effect.gen(function* () {
             const db = yield* Prisma;
 

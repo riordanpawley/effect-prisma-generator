@@ -129,6 +129,14 @@ function generateRawSqlOperations(customError, enableTelemetry) {
       });
     }`)},
 
+    $queryRawTyped: ${wrapTelemetry("Prisma.$queryRawTyped", `function* (query) {
+      const actualClient = yield* clientOrTx(client);
+      return yield* Effect.tryPromise<any, ${errorType}>({
+        try: () => (actualClient as any).$queryRawTyped(query as any) as any,
+        catch: (error) => mapError(error, "$queryRawTyped", "Prisma")
+      });
+    }`)},
+
     $queryRawUnsafe: ${wrapTelemetry("Prisma.$queryRawUnsafe", `function* (query, ...values) {
       const actualClient = yield* clientOrTx(client);
       return yield* Effect.tryPromise<any, ${errorType}>({
@@ -326,6 +334,10 @@ export interface IPrismaService {
   $queryRaw: <T = unknown>(
     args: PrismaNamespace.Sql | [PrismaNamespace.Sql, ...any[]]
   ) => EffectType<T, ${errorType}>
+
+  $queryRawTyped: <T>(
+    query: unknown
+  ) => EffectType<T[], ${errorType}>
 
   $queryRawUnsafe: <T = unknown>(
     query: string,
@@ -550,7 +562,7 @@ async function generateUnifiedService(models, outputDir, clientImportPath, error
 function generateCustomErrorService(customError, clientImportPath, rawSqlOperations, modelTypeAliases, prismaInterface, modelOperations, enableTelemetry) {
     const _errorType = customError.className;
     return `${header}
-import { Effect, Exit, Layer, Option, Scope, ServiceMap } from "effect"
+import { Context, Effect, Exit, Layer, Option, Scope } from "effect"
 import type { Effect as EffectType, Error as EffectError, Services as EffectServices, Success as EffectSuccess } from "effect/Effect"
 import { Prisma as PrismaNamespace, PrismaClient as BasePrismaClient } from "${clientImportPath}"
 import { ${customError.className}, mapPrismaError } from "${customError.path}"
@@ -596,7 +608,7 @@ type TransactionOptions = {
  *   transactionOptions: { isolationLevel: "Serializable", timeout: 10000 }
  * })
  */
-export class PrismaClient extends ServiceMap.Service<PrismaClient, BasePrismaClient>()("PrismaClient") {
+export class PrismaClient extends Context.Service<PrismaClient, BasePrismaClient>()("PrismaClient") {
   /**
    * Create a PrismaClient layer with the given options.
    * The client will be automatically disconnected when the layer scope ends.
@@ -671,7 +683,7 @@ export class PrismaClient extends ServiceMap.Service<PrismaClient, BasePrismaCli
  * This service is only available inside \`$transaction\` calls.
  * Use \`Effect.serviceOption(PrismaTransactionClientService)\` to check if you're in a transaction.
  */
-export class PrismaTransactionClientService extends ServiceMap.Service<PrismaTransactionClientService, PrismaNamespace.TransactionClient>()("PrismaTransactionClientService") {}
+export class PrismaTransactionClientService extends Context.Service<PrismaTransactionClientService, PrismaNamespace.TransactionClient>()("PrismaTransactionClientService") {}
 
 // Re-export the custom error type for convenience
 export { ${customError.className} }
@@ -1015,7 +1027,7 @@ const makePrismaService = Effect.gen(function* () {
   return prismaService;
 });
 
-export class Prisma extends ServiceMap.Service<Prisma, IPrismaService>()("Prisma") {
+export class Prisma extends Context.Service<Prisma, IPrismaService>()("Prisma") {
   /**
    * Effect that constructs the Prisma service.
    * Used internally by layer constructors.
@@ -1093,7 +1105,7 @@ export class Prisma extends ServiceMap.Service<Prisma, IPrismaService>()("Prisma
 function generateDefaultErrorService(clientImportPath, rawSqlOperations, modelTypeAliases, prismaInterface, modelOperations, enableTelemetry) {
     const _errorType = "PrismaError";
     return `${header}
-import { Data, Effect, Exit, Layer, Option, Scope, ServiceMap } from "effect"
+import { Context, Data, Effect, Exit, Layer, Option, Scope } from "effect"
 import type { Effect as EffectType, Error as EffectError, Services as EffectServices, Success as EffectSuccess } from "effect/Effect"
 import { Prisma as PrismaNamespace, PrismaClient as BasePrismaClient } from "${clientImportPath}"
 
@@ -1147,7 +1159,7 @@ type TransactionOptions = {
  *   transactionOptions: { isolationLevel: "Serializable", timeout: 10000 }
  * })
  */
-export class PrismaClient extends ServiceMap.Service<PrismaClient, BasePrismaClient>()("PrismaClient") {
+export class PrismaClient extends Context.Service<PrismaClient, BasePrismaClient>()("PrismaClient") {
   /**
    * Create a PrismaClient layer with the given options.
    * The client will be automatically disconnected when the layer scope ends.
@@ -1222,7 +1234,7 @@ export class PrismaClient extends ServiceMap.Service<PrismaClient, BasePrismaCli
  * This service is only available inside \`$transaction\` calls.
  * Use \`Effect.serviceOption(PrismaTransactionClientService)\` to check if you're in a transaction.
  */
-export class PrismaTransactionClientService extends ServiceMap.Service<PrismaTransactionClientService, PrismaNamespace.TransactionClient>()("PrismaTransactionClientService") {}
+export class PrismaTransactionClientService extends Context.Service<PrismaTransactionClientService, PrismaNamespace.TransactionClient>()("PrismaTransactionClientService") {}
 
 export class PrismaUniqueConstraintError extends Data.TaggedError("PrismaUniqueConstraintError")<{
   cause: PrismaNamespace.PrismaClientKnownRequestError
@@ -1910,7 +1922,7 @@ const makePrismaService = Effect.gen(function* () {
   return prismaService;
 });
 
-export class Prisma extends ServiceMap.Service<Prisma, IPrismaService>()("Prisma") {
+export class Prisma extends Context.Service<Prisma, IPrismaService>()("Prisma") {
   /**
    * Effect that constructs the Prisma service.
    * Used internally by layer constructors.
