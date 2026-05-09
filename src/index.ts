@@ -55,9 +55,16 @@ generatorHandler({
 		// Set to "true" to wrap operations with Effect.fn (adds operation names to traces)
 		// Set to "false" to use Effect.fnUntraced (no telemetry overhead)
 		const telemetryConfigRaw = options.generator.config.enableTelemetry;
-		const enableTelemetry = Array.isArray(telemetryConfigRaw)
-			? telemetryConfigRaw[0] === "true"
-			: telemetryConfigRaw === "true";
+			const enableTelemetry = Array.isArray(telemetryConfigRaw)
+				? telemetryConfigRaw[0] === "true"
+				: telemetryConfigRaw === "true";
+			const serviceKeyPrefixConfigRaw = options.generator.config.serviceKeyPrefix;
+			const serviceKeyPrefixRaw = Array.isArray(serviceKeyPrefixConfigRaw)
+				? serviceKeyPrefixConfigRaw[0]
+				: serviceKeyPrefixConfigRaw;
+			const serviceKeyPrefix = (
+				serviceKeyPrefixRaw ?? "effect-prisma-generator"
+			).replace(/\/$/, "");
 
 		if (!outputDir) {
 			throw new Error("No output directory specified");
@@ -107,10 +114,11 @@ generatorHandler({
 		await generateUnifiedService(
 			[...models],
 			outputDir,
-			clientImportPath,
-			errorImportPath,
-			enableTelemetry,
-		);
+				clientImportPath,
+				errorImportPath,
+				enableTelemetry,
+				serviceKeyPrefix,
+			);
 	},
 });
 
@@ -665,6 +673,7 @@ async function generateUnifiedService(
 	clientImportPath: string,
 	errorImportPath: string | undefined,
 	enableTelemetry: boolean,
+	serviceKeyPrefix: string,
 ) {
 	const customError = parseErrorImportPath(errorImportPath);
 	const rawSqlOperations = generateRawSqlOperations(
@@ -686,18 +695,20 @@ async function generateUnifiedService(
 				clientImportPath,
 				rawSqlOperations,
 				modelTypeAliases,
-				prismaInterface,
-				modelOperations,
-				enableTelemetry,
-			)
-		: generateDefaultErrorService(
-				clientImportPath,
+					prismaInterface,
+					modelOperations,
+					enableTelemetry,
+					serviceKeyPrefix,
+				)
+			: generateDefaultErrorService(
+					clientImportPath,
 				rawSqlOperations,
 				modelTypeAliases,
-				prismaInterface,
-				modelOperations,
-				enableTelemetry,
-			);
+					prismaInterface,
+					modelOperations,
+					enableTelemetry,
+					serviceKeyPrefix,
+				);
 
 	const outputPath = path.join(outputDir, "index.ts");
 	await fs.writeFile(outputPath, serviceContent);
@@ -725,10 +736,11 @@ function generateCustomErrorService(
 	prismaInterface: string,
 	modelOperations: string,
 	enableTelemetry: boolean,
+	serviceKeyPrefix: string,
 ): string {
 	const _errorType = customError.className;
 	return `${header}
-import { Context, Effect, Exit, Layer, Option, Scope } from "effect"
+	import { Context, Deferred, Effect, Exit, Layer, Option, Scope } from "effect"
 import type { Effect as EffectType, Error as EffectError, Services as EffectServices, Success as EffectSuccess } from "effect/Effect"
 import { Prisma as PrismaNamespace, PrismaClient as BasePrismaClient } from "${clientImportPath}"
 import { ${customError.className}, mapPrismaError } from "${customError.path}"
@@ -774,7 +786,7 @@ type TransactionOptions = {
  *   transactionOptions: { isolationLevel: "Serializable", timeout: 10000 }
  * })
  */
-export class PrismaClient extends Context.Service<PrismaClient, BasePrismaClient>()("PrismaClient") {
+export class PrismaClient extends Context.Service<PrismaClient, BasePrismaClient>()("${serviceKeyPrefix}/PrismaClient") {
   /**
    * Create a PrismaClient layer with the given options.
    * The client will be automatically disconnected when the layer scope ends.
@@ -849,7 +861,7 @@ export class PrismaClient extends Context.Service<PrismaClient, BasePrismaClient
  * This service is only available inside \`$transaction\` calls.
  * Use \`Effect.serviceOption(PrismaTransactionClientService)\` to check if you're in a transaction.
  */
-export class PrismaTransactionClientService extends Context.Service<PrismaTransactionClientService, PrismaNamespace.TransactionClient>()("PrismaTransactionClientService") {}
+export class PrismaTransactionClientService extends Context.Service<PrismaTransactionClientService, PrismaNamespace.TransactionClient>()("${serviceKeyPrefix}/PrismaTransactionClientService") {}
 
 // Re-export the custom error type for convenience
 export { ${customError.className} }
@@ -917,25 +929,23 @@ const $begin = (
   }
 ): EffectType<FlatTransactionClient, ${customError.className}> =>
   Effect.callback<FlatTransactionClient, ${customError.className}>((resume) => {
-    let setTxClient: (txClient: PrismaNamespace.TransactionClient) => void
     let commit: () => void
     let rollback: () => void
 
-    // Promise that resolves when we get the transaction client
-    const txClientPromise = new Promise<PrismaNamespace.TransactionClient>((res) => {
-      setTxClient = res
-    })
+    const txClientDeferred = Deferred.makeUnsafe<PrismaNamespace.TransactionClient>()
+    const txPromiseDeferred = Deferred.makeUnsafe<void, typeof ROLLBACK>()
 
-    // Promise that controls when the transaction commits/rolls back
-    const txPromise = new Promise<void>((_res, _rej) => {
-      commit = () => _res(undefined)
-      rollback = () => _rej(ROLLBACK)
-    })
+    commit = () => {
+      Deferred.doneUnsafe(txPromiseDeferred, Effect.void)
+    }
+    rollback = () => {
+      Deferred.doneUnsafe(txPromiseDeferred, Effect.fail(ROLLBACK))
+    }
 
     // Start the transaction - Prisma will wait on txPromise before committing
     const tx = client.$transaction((txClient) => {
-      setTxClient(txClient)
-      return txPromise
+      Deferred.doneUnsafe(txClientDeferred, Effect.succeed(txClient))
+      return Effect.runPromise(Deferred.await(txPromiseDeferred))
     }, options).catch((e) => {
       // Swallow intentional rollbacks, rethrow actual errors
       if (e === ROLLBACK) return
@@ -943,7 +953,7 @@ const $begin = (
     })
 
     // Once we have the transaction client, wrap it with commit/rollback methods
-    txClientPromise.then((innerTx) => {
+    Effect.runPromise(Deferred.await(txClientDeferred)).then((innerTx) => {
       const proxy = new Proxy(innerTx, {
         get(target, prop) {
           if (prop === "$commit") return () => { commit(); return tx }
@@ -1193,7 +1203,7 @@ const makePrismaService = Effect.gen(function* () {
   return prismaService;
 });
 
-export class Prisma extends Context.Service<Prisma, IPrismaService>()("Prisma") {
+export class Prisma extends Context.Service<Prisma, IPrismaService>()("${serviceKeyPrefix}/Prisma") {
   /**
    * Effect that constructs the Prisma service.
    * Used internally by layer constructors.
@@ -1276,10 +1286,11 @@ function generateDefaultErrorService(
 	prismaInterface: string,
 	modelOperations: string,
 	enableTelemetry: boolean,
+	serviceKeyPrefix: string,
 ): string {
 	const _errorType = "PrismaError";
 	return `${header}
-import { Context, Data, Effect, Exit, Layer, Option, Scope } from "effect"
+	import { Context, Data, Deferred, Effect, Exit, Layer, Option, Scope } from "effect"
 import type { Effect as EffectType, Error as EffectError, Services as EffectServices, Success as EffectSuccess } from "effect/Effect"
 import { Prisma as PrismaNamespace, PrismaClient as BasePrismaClient } from "${clientImportPath}"
 
@@ -1333,7 +1344,7 @@ type TransactionOptions = {
  *   transactionOptions: { isolationLevel: "Serializable", timeout: 10000 }
  * })
  */
-export class PrismaClient extends Context.Service<PrismaClient, BasePrismaClient>()("PrismaClient") {
+export class PrismaClient extends Context.Service<PrismaClient, BasePrismaClient>()("${serviceKeyPrefix}/PrismaClient") {
   /**
    * Create a PrismaClient layer with the given options.
    * The client will be automatically disconnected when the layer scope ends.
@@ -1408,7 +1419,7 @@ export class PrismaClient extends Context.Service<PrismaClient, BasePrismaClient
  * This service is only available inside \`$transaction\` calls.
  * Use \`Effect.serviceOption(PrismaTransactionClientService)\` to check if you're in a transaction.
  */
-export class PrismaTransactionClientService extends Context.Service<PrismaTransactionClientService, PrismaNamespace.TransactionClient>()("PrismaTransactionClientService") {}
+export class PrismaTransactionClientService extends Context.Service<PrismaTransactionClientService, PrismaNamespace.TransactionClient>()("${serviceKeyPrefix}/PrismaTransactionClientService") {}
 
 export class PrismaUniqueConstraintError extends Data.TaggedError("PrismaUniqueConstraintError")<{
   cause: PrismaNamespace.PrismaClientKnownRequestError
@@ -1821,25 +1832,23 @@ const $begin = (
   }
 ): EffectType<FlatTransactionClient, PrismaError> =>
   Effect.callback<FlatTransactionClient, PrismaError>((resume) => {
-    let setTxClient: (txClient: PrismaNamespace.TransactionClient) => void
     let commit: () => void
     let rollback: () => void
 
-    // Promise that resolves when we get the transaction client
-    const txClientPromise = new Promise<PrismaNamespace.TransactionClient>((res) => {
-      setTxClient = res
-    })
+    const txClientDeferred = Deferred.makeUnsafe<PrismaNamespace.TransactionClient>()
+    const txPromiseDeferred = Deferred.makeUnsafe<void, typeof ROLLBACK>()
 
-    // Promise that controls when the transaction commits/rolls back
-    const txPromise = new Promise<void>((_res, _rej) => {
-      commit = () => _res(undefined)
-      rollback = () => _rej(ROLLBACK)
-    })
+    commit = () => {
+      Deferred.doneUnsafe(txPromiseDeferred, Effect.void)
+    }
+    rollback = () => {
+      Deferred.doneUnsafe(txPromiseDeferred, Effect.fail(ROLLBACK))
+    }
 
     // Start the transaction - Prisma will wait on txPromise before committing
     const tx = client.$transaction((txClient) => {
-      setTxClient(txClient)
-      return txPromise
+      Deferred.doneUnsafe(txClientDeferred, Effect.succeed(txClient))
+      return Effect.runPromise(Deferred.await(txPromiseDeferred))
     }, options).catch((e) => {
       // Swallow intentional rollbacks, rethrow actual errors
       if (e === ROLLBACK) return
@@ -1847,7 +1856,7 @@ const $begin = (
     })
 
     // Once we have the transaction client, wrap it with commit/rollback methods
-    txClientPromise.then((innerTx) => {
+    Effect.runPromise(Deferred.await(txClientDeferred)).then((innerTx) => {
       const proxy = new Proxy(innerTx, {
         get(target, prop) {
           if (prop === "$commit") return () => { commit(); return tx }
@@ -2096,7 +2105,7 @@ const makePrismaService = Effect.gen(function* () {
   return prismaService;
 });
 
-export class Prisma extends Context.Service<Prisma, IPrismaService>()("Prisma") {
+export class Prisma extends Context.Service<Prisma, IPrismaService>()("${serviceKeyPrefix}/Prisma") {
   /**
    * Effect that constructs the Prisma service.
    * Used internally by layer constructors.
