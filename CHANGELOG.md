@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.4](https://github.com/riordanpawley/effect-prisma-generator/compare/v1.1.2...v1.1.4) (2026-05-21)
+
+### Bug Fixes
+
+* **types:** preserve TypedSQL inference for `$queryRawTyped` in generated `IPrismaService`
+  * Accept `TypedSql` query values instead of `unknown`
+  * Infer row result types from query result payloads
+  * Add `TypedSql` type import in generated files
+
 ## [1.1.2](https://github.com/riordanpawley/effect-prisma-generator/compare/v1.1.1...v1.1.2) (2026-04-14)
 
 

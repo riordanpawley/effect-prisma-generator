@@ -400,9 +400,9 @@ export interface IPrismaService {
     args: PrismaNamespace.Sql | [PrismaNamespace.Sql, ...any[]]
   ) => EffectType<T, ${errorType}>
 
-  $queryRawTyped: <T>(
-    query: unknown
-  ) => EffectType<T[], ${errorType}>
+  $queryRawTyped: <TQuery extends TypedSql<any, any>>(
+    query: TQuery
+  ) => EffectType<Array<TQuery extends TypedSql<any, infer TResult> ? TResult : never>, ${errorType}>
 
   $queryRawUnsafe: <T = unknown>(
     query: string,
@@ -743,6 +743,7 @@ function generateCustomErrorService(
 	import { Context, Deferred, Effect, Exit, Layer, Option, Scope } from "effect"
 import type { Effect as EffectType, Error as EffectError, Services as EffectServices, Success as EffectSuccess } from "effect/Effect"
 import { Prisma as PrismaNamespace, PrismaClient as BasePrismaClient } from "${clientImportPath}"
+import type { TypedSql } from "@prisma/client/runtime/client"
 import { ${customError.className}, mapPrismaError } from "${customError.path}"
 
 // ============================================================================
@@ -1293,6 +1294,7 @@ function generateDefaultErrorService(
 	import { Context, Data, Deferred, Effect, Exit, Layer, Option, Scope } from "effect"
 import type { Effect as EffectType, Error as EffectError, Services as EffectServices, Success as EffectSuccess } from "effect/Effect"
 import { Prisma as PrismaNamespace, PrismaClient as BasePrismaClient } from "${clientImportPath}"
+import type { TypedSql } from "@prisma/client/runtime/client"
 
 // Create local reference to error class for proper type narrowing
 const PrismaClientKnownRequestError = PrismaNamespace.PrismaClientKnownRequestError
