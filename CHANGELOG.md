@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.3](https://github.com/riordanpawley/effect-prisma-generator/compare/v1.1.2...v1.1.3) (2026-05-21)
+
+
+### Bug Fixes
+
+* emit effect v4 service keys ([cff4cb9](https://github.com/riordanpawley/effect-prisma-generator/commit/cff4cb90d441a80109acf62c7db78c85f75e496e))
+* target current effect v4 services ([de9d3f4](https://github.com/riordanpawley/effect-prisma-generator/commit/de9d3f4fce813ef9ff5e7bc74b0041c54136311f))
+
 ## [1.1.4](https://github.com/riordanpawley/effect-prisma-generator/compare/v1.1.2...v1.1.4) (2026-05-21)
 
 ### Bug Fixes
